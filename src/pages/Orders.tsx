@@ -19,6 +19,7 @@ export type Order = {
   status: "pending" | "in_progress" | "completed";
   createdAt: string;
   events: OrderEvent[];
+  deletedAt?: string; // moved to bin timestamp
 };
 
 const Orders = () => {
@@ -53,16 +54,19 @@ const Orders = () => {
       </Helmet>
       <section className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Orders</h1>
-        <Button onClick={createOrder}>Create Order</Button>
+        <div className="flex items-center gap-2">
+          <Link to="/orders/bin"><Button variant="outline">View Bin</Button></Link>
+          <Button onClick={createOrder}>Create Order</Button>
+        </div>
       </section>
 
-      {orders.length === 0 ? (
+      {orders.filter(o => !o.deletedAt).length === 0 ? (
         <div className="rounded-lg border p-6 text-muted-foreground">
-          No orders yet. Create your first order to start the timeline.
+          No active orders. Create a new order or view items in the bin.
         </div>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {orders.map((o) => (
+          {orders.filter(o => !o.deletedAt).map((o) => (
             <li key={o.id} className="rounded-lg border p-4">
               <div className="mb-1 text-lg font-medium">{o.title}</div>
               <div className="text-sm text-muted-foreground">Created: {new Date(o.createdAt).toLocaleString()}</div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import type { Client } from "./Clients";
 
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -26,6 +27,7 @@ const OrderDetail = () => {
   }, []);
 
   const order = useMemo(() => orders.find(o => o.id === id), [orders, id]);
+  const isInBin = useMemo(() => !!order?.deletedAt, [order]);
 
   useEffect(() => {
     // If order doesn't exist, initialize it
@@ -74,6 +76,32 @@ const OrderDetail = () => {
     toast({ title: "Client linked", description: clients.find(c => c.id === clientId)?.fullName });
   };
 
+  const moveToBin = () => {
+    if (!order) return;
+    const updated = orders.map(o => o.id === order.id ? { ...o, deletedAt: new Date().toISOString() } : o);
+    setOrders(updated);
+    saveJSON("orders", updated);
+    toast({ title: "Moved to bin" });
+    navigate("/orders");
+  };
+
+  const restoreFromBin = () => {
+    if (!order) return;
+    const updated = orders.map(o => o.id === order.id ? { ...o, deletedAt: undefined } : o);
+    setOrders(updated);
+    saveJSON("orders", updated);
+    toast({ title: "Order restored" });
+  };
+
+  const deletePermanently = () => {
+    if (!order) return;
+    const updated = orders.filter(o => o.id !== order.id);
+    setOrders(updated);
+    saveJSON("orders", updated);
+    toast({ title: "Order deleted permanently" });
+    navigate("/orders");
+  };
+
   const doCapture = async (mode: 'camera' | 'gallery') => {
     const dataUrl = mode === 'camera' ? await captureFromCamera() : await pickFromGallery();
     if (dataUrl) {
@@ -119,7 +147,17 @@ const OrderDetail = () => {
           <h1 className="text-2xl font-semibold">{order.title}</h1>
           <p className="text-sm text-muted-foreground">Created {new Date(order.createdAt).toLocaleString()}</p>
         </div>
-        <div className="text-sm text-muted-foreground">Status: {order.status.replace("_", " ")}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-muted-foreground">Status: {order.status.replace("_", " ")}</div>
+          {!isInBin ? (
+            <Button size="sm" variant="outline" onClick={moveToBin}>Move to Bin</Button>
+          ) : (
+            <>
+              <Button size="sm" onClick={restoreFromBin}>Restore</Button>
+              <Button size="sm" variant="destructive" onClick={deletePermanently}>Delete Permanently</Button>
+            </>
+          )}
+        </div>
       </section>
 
       <section className="mb-6 rounded-lg border p-4">

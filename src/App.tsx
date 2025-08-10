@@ -9,6 +9,7 @@ import Clients from "./pages/Clients";
 import ClientNew from "./pages/ClientNew";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
+import OrdersBin from "./pages/OrdersBin";
 import AppHeader from "./components/layout/AppHeader";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
         <Route path="/clients" element={<Clients />} />
         <Route path="/clients/new" element={<ClientNew />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/bin" element={<OrdersBin />} />
         <Route path="/orders/:id" element={<OrderDetail />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
