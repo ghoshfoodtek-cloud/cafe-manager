@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, UserPlus, Users, ShoppingCart, Trash2 } from "lucide-react";
+import { Plus, UserPlus, Users, ShoppingCart, Trash2, PhoneCall } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const FloatingActions = () => {
@@ -33,6 +33,9 @@ const FloatingActions = () => {
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => navigate("/clients")}> 
             <Users className="mr-2 h-4 w-4" /> View Clients
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => navigate("/calls")}>
+            <PhoneCall className="mr-2 h-4 w-4" /> Call Logs
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => navigate("/orders")}> 
             <ShoppingCart className="mr-2 h-4 w-4" /> View Orders
