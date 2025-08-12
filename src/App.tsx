@@ -12,7 +12,7 @@ import OrderDetail from "./pages/OrderDetail";
 import OrdersBin from "./pages/OrdersBin";
 import CallLogs from "./pages/CallLogs";
 import AppHeader from "./components/layout/AppHeader";
-import FloatingActions from "./components/layout/FloatingActions";
+import FloatingFab from "./components/layout/FloatingActions";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +33,7 @@ const App = () => (
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <FloatingActions />
+      <FloatingFab />
     </TooltipProvider>
   </QueryClientProvider>
 );
