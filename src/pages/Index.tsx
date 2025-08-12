@@ -121,14 +121,6 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2"><CardTitle>Quick Actions</CardTitle></CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <Link to="/clients"><Button className="w-full">View Clients</Button></Link>
-              <Link to="/clients/new"><Button className="w-full" variant="secondary">New Client</Button></Link>
-              <Link to="/orders"><Button className="w-full" variant="outline">View Orders</Button></Link>
-            </CardContent>
-          </Card>
         </section>
       </section>
     </main>
