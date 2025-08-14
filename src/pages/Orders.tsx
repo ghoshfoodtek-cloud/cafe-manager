@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
-import { loadJSON, saveJSON, clearAllData } from "@/lib/storage";
-import { useToast } from "@/hooks/use-toast";
+import { loadJSON, saveJSON } from "@/lib/storage";
 
 export type OrderEvent = {
   id: string;
@@ -26,7 +25,6 @@ export type Order = {
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     setOrders(loadJSON<Order[]>("orders", []));
@@ -64,16 +62,6 @@ const Orders = () => {
     navigate(`/orders/${order.id}`);
   };
 
-  const clearAllDataHandler = () => {
-    if (confirm('Are you sure you want to delete ALL orders and client data? This action cannot be undone.')) {
-      clearAllData();
-      setOrders([]);
-      toast({
-        title: "Data cleared",
-        description: "All orders and client data have been deleted.",
-      });
-    }
-  };
 
   return (
     <main className="container mx-auto py-6">
@@ -85,7 +73,6 @@ const Orders = () => {
       <section className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Orders</h1>
         <div className="flex items-center gap-2">
-          <Button variant="destructive" onClick={clearAllDataHandler}>Clear All Data</Button>
           <Link to="/orders/bin"><Button variant="outline">View Bin</Button></Link>
           <Button onClick={createOrder}>Create Order</Button>
         </div>
