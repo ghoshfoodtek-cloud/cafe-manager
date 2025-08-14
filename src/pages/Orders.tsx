@@ -32,18 +32,33 @@ const Orders = () => {
 
   const createOrder = () => {
     const list = loadJSON<Order[]>("orders", []);
-    // Generate unique ID using timestamp + random component
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Generate truly unique ID using crypto API or fallback
+    const generateUniqueId = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      // Fallback with timestamp and multiple random components
+      return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.random().toString(36).substr(2, 9)}`;
+    };
+    
+    let uniqueId;
+    do {
+      uniqueId = generateUniqueId();
+    } while (list.some(order => order.id === uniqueId));
+    
+    const activeOrders = list.filter(o => !o.deletedAt);
     const order: Order = {
       id: uniqueId,
-      title: `New Order #${(list.length + 1).toString().padStart(3, "0")}`,
+      title: `New Order #${(activeOrders.length + 1).toString().padStart(3, "0")}`,
       status: "pending",
       createdAt: new Date().toISOString(),
       events: [],
     };
-    list.unshift(order);
-    saveJSON("orders", list);
-    setOrders(list);
+    
+    const updatedList = [order, ...list];
+    saveJSON("orders", updatedList);
+    setOrders(updatedList);
     navigate(`/orders/${order.id}`);
   };
 
