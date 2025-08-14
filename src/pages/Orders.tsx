@@ -32,8 +32,10 @@ const Orders = () => {
 
   const createOrder = () => {
     const list = loadJSON<Order[]>("orders", []);
+    // Generate unique ID using timestamp + random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const order: Order = {
-      id: String(Date.now()),
+      id: uniqueId,
       title: `New Order #${(list.length + 1).toString().padStart(3, "0")}`,
       status: "pending",
       createdAt: new Date().toISOString(),
