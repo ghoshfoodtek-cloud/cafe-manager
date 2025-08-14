@@ -16,12 +16,15 @@ const schema = z.object({
   age: z.string().optional(),
   phones: z.string().min(10, "Enter at least one phone"),
   address: z.string().optional(),
+  city: z.string().optional(),
+  village: z.string().optional(),
+  block: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 const ClientNew = () => {
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { fullName: "", age: "", phones: "", address: "" } });
+  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { fullName: "", age: "", phones: "", address: "", city: "", village: "", block: "" } });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -33,6 +36,9 @@ const ClientNew = () => {
       age: values.age ? Number(values.age) : undefined,
       phones: values.phones.split(",").map(p => p.trim()).filter(Boolean),
       address: values.address?.trim(),
+      city: values.city?.trim(),
+      village: values.village?.trim(),
+      block: values.block?.trim(),
       createdAt: new Date().toISOString(),
     };
     list.push(client);
@@ -101,6 +107,47 @@ const ClientNew = () => {
               </FormItem>
             )}
           />
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <FormControl><Input placeholder="e.g., Patna" {...field} /></FormControl>
+                  <FormDescription>Optional</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="village"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Village</FormLabel>
+                  <FormControl><Input placeholder="e.g., Rampur" {...field} /></FormControl>
+                  <FormDescription>Optional</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="block"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Block</FormLabel>
+                  <FormControl><Input placeholder="e.g., Danapur" {...field} /></FormControl>
+                  <FormDescription>Optional</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <div className="flex items-center gap-3">
             <Button type="submit">Create Profile</Button>

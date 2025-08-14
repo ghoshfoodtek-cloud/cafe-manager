@@ -10,6 +10,9 @@ export type Client = {
   age?: number;
   phones: string[];
   address?: string;
+  city?: string;
+  village?: string;
+  block?: string;
   createdAt: string;
 };
 
@@ -44,6 +47,9 @@ const Clients = () => {
               <div className="text-sm text-muted-foreground">Created: {new Date(c.createdAt).toLocaleString()}</div>
               <div className="mt-2 text-sm">Phones: {c.phones.join(", ")}</div>
               {c.address && <div className="mt-1 text-sm">Address: {c.address}</div>}
+              {c.city && <div className="mt-1 text-sm">City: {c.city}</div>}
+              {c.village && <div className="mt-1 text-sm">Village: {c.village}</div>}
+              {c.block && <div className="mt-1 text-sm">Block: {c.block}</div>}
             </li>
           ))}
         </ul>
