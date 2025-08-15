@@ -29,22 +29,7 @@ const OrderDetail = () => {
   const order = useMemo(() => orders.find(o => o.id === id), [orders, id]);
   const isInBin = useMemo(() => !!order?.deletedAt, [order]);
 
-  useEffect(() => {
-    // If order doesn't exist, initialize it
-    if (!order && id) {
-      const list = loadJSON<Order[]>("orders", []);
-      const newOrder: Order = {
-        id,
-        title: `Order ${id}`,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        events: [],
-      };
-      list.unshift(newOrder);
-      saveJSON("orders", list);
-      setOrders(list);
-    }
-  }, [order, id]);
+  // Removed auto-creation logic that was causing phantom orders
 
   const addEvent = () => {
     if (!order) return;
@@ -129,7 +114,13 @@ const OrderDetail = () => {
   if (!order) {
     return (
       <main className="container mx-auto py-6">
-        <div className="rounded-lg border p-6">Loading order...</div>
+        <div className="rounded-lg border p-6">
+          <h1 className="text-xl font-semibold mb-2">Order Not Found</h1>
+          <p className="text-muted-foreground mb-4">The order you're looking for doesn't exist.</p>
+          <Link to="/orders">
+            <Button>Back to Orders</Button>
+          </Link>
+        </div>
       </main>
     );
   }
