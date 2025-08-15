@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Contacts from "./pages/Contacts";
 import ClientNew from "./pages/ClientNew";
+import ClientEdit from "./pages/ClientEdit";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import OrdersBin from "./pages/OrdersBin";
@@ -28,6 +29,7 @@ const App = () => (
         <Route path="/" element={<Index />} />
         <Route path="/clients" element={<Contacts />} />
         <Route path="/clients/new" element={<ClientNew />} />
+        <Route path="/clients/:id/edit" element={<ClientEdit />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/new" element={<CreateOrder />} />
         <Route path="/orders/bin" element={<OrdersBin />} />
