@@ -10,6 +10,8 @@ import ClientNew from "./pages/ClientNew";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import OrdersBin from "./pages/OrdersBin";
+import CreateOrder from "./pages/CreateOrder";
+import AddGlobalEvent from "./pages/AddGlobalEvent";
 import CallLogs from "./pages/CallLogs";
 import AppHeader from "./components/layout/AppHeader";
 import FloatingFab from "./components/layout/FloatingActions";
@@ -27,8 +29,10 @@ const App = () => (
         <Route path="/clients" element={<Contacts />} />
         <Route path="/clients/new" element={<ClientNew />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/new" element={<CreateOrder />} />
         <Route path="/orders/bin" element={<OrdersBin />} />
         <Route path="/orders/:id" element={<OrderDetail />} />
+        <Route path="/events/new" element={<AddGlobalEvent />} />
         <Route path="/calls" element={<CallLogs />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
