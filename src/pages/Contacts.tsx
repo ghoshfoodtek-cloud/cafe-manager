@@ -99,6 +99,13 @@ const Contacts = () => {
     setClients(loadJSON<ExtClient[]>("clients", []));
   }, []);
 
+  // Cleanup: Close InCallSheet when component unmounts to prevent scroll lock
+  useEffect(() => {
+    return () => {
+      setOpen(false);
+    };
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(LAYOUT_KEY, layout);
   }, [layout]);
