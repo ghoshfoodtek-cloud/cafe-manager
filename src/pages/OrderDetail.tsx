@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import { captureFromCamera, pickFromGallery } from "@/lib/capture";
 import type { Order, OrderEvent } from "./Orders";
-import type { Client } from "./Clients";
+import type { Client } from "@/types/client";
 
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();

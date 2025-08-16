@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import {
   FolderPlus,
 } from "lucide-react";
 import { loadJSON, saveJSON } from "@/lib/storage";
-import type { Client } from "./Clients";
+import type { Client, ExtClient, ContactGroup } from "@/types/client";
 import InCallSheet from "@/components/calls/InCallSheet";
 import {
   DropdownMenu,
@@ -52,26 +53,11 @@ import {
 } from "@/components/ui/select";
 
 // Extended client fields for Contacts without breaking other pages
-export type ExtClient = Client & {
-  firstName?: string;
-  middleName?: string;
-  lastName?: string;
-  profession?: string;
-  qualifications?: string; // comma separated
-  email?: string;
-  company?: string;
-  groupId?: string; // family group id
-};
-
-export type ContactGroup = {
-  id: string;
-  name: string;
-};
 
 const GROUPS_KEY = "contactGroups";
 const LAYOUT_KEY = "contactsLayout";
 
-const Contacts = () => {
+const ClientList = () => {
   const [clients, setClients] = useState<ExtClient[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<{ client: ExtClient | null; phone: string | null }>({ client: null, phone: null });
@@ -83,10 +69,6 @@ const Contacts = () => {
   const [groups, setGroups] = useState<ContactGroup[]>(loadJSON<ContactGroup[]>(GROUPS_KEY, []));
   const [groupFilter, setGroupFilter] = useState<string>("all");
 
-  // Edit dialog
-  const [editOpen, setEditOpen] = useState(false);
-  const [editing, setEditing] = useState<ExtClient | null>(null);
-
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [toDelete, setToDelete] = useState<ExtClient | null>(null);
@@ -95,8 +77,37 @@ const Contacts = () => {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
+  // Refresh client list when component mounts or when returning from edit
   useEffect(() => {
-    setClients(loadJSON<ExtClient[]>("clients", []));
+    const refreshClients = () => {
+      const clients = loadJSON<ExtClient[]>("clients", []);
+      setClients(clients);
+    };
+
+    refreshClients();
+
+    // Listen for storage changes to refresh when data is updated
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "clients") {
+        refreshClients();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also refresh when tab becomes visible (user returns from edit)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshClients();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Cleanup: Close InCallSheet when component unmounts to prevent scroll lock
@@ -125,21 +136,9 @@ const Contacts = () => {
     setOpen(true);
   };
 
-  function handleEdit(client: ExtClient) {
-    // Clone for form editing
-    setEditing({ ...client });
-    setEditOpen(true);
-  }
-
   function handleDelete(client: ExtClient) {
     setToDelete(client);
     setDeleteOpen(true);
-  }
-
-  function saveClient(updated: ExtClient) {
-    const next = clients.map((c) => (c.id === updated.id ? normalizeClient(updated) : c));
-    setClients(next);
-    saveJSON("clients", next);
   }
 
   function normalizeClient(c: ExtClient): ExtClient {
@@ -170,13 +169,13 @@ const Contacts = () => {
   return (
     <main className="container mx-auto py-6">
       <Helmet>
-        <title>Contacts | Bharat Connect Pro</title>
-        <meta name="description" content="Contacts with quick call, logs, notes, and productivity tools." />
+        <title>Clients | Bharat Connect Pro</title>
+        <meta name="description" content="Manage client contacts with quick call, logs, notes, and productivity tools." />
         <link rel="canonical" href="/clients" />
       </Helmet>
 
       <section className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Contacts</h1>
+        <h1 className="text-2xl font-semibold">Clients</h1>
         <div className="flex items-center gap-1">
           <Button
             variant={layout === "list" ? "secondary" : "ghost"}
@@ -237,7 +236,7 @@ const Contacts = () => {
       </section>
 
       {filtered.length === 0 ? (
-        <Card className="p-6 text-muted-foreground">No contacts found.</Card>
+        <Card className="p-6 text-muted-foreground">No clients found.</Card>
       ) : layout === "grid" ? (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
@@ -269,8 +268,10 @@ const Contacts = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(c)}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      <DropdownMenuItem asChild>
+                        <Link to={`/clients/${c.id}/edit`}>
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
@@ -324,8 +325,10 @@ const Contacts = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(c)}>
-                      <Edit className="mr-2 h-4 w-4" /> Edit
+                    <DropdownMenuItem asChild>
+                      <Link to={`/clients/${c.id}/edit`}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
@@ -341,109 +344,13 @@ const Contacts = () => {
 
       <InCallSheet open={open} onOpenChange={setOpen} client={selected.client as Client} phone={selected.phone} />
 
-      {/* Edit contact dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Contact</DialogTitle>
-          </DialogHeader>
-          {editing && (
-            <form
-              className="grid gap-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveClient(editing);
-                setEditOpen(false);
-                setEditing(null);
-              }}
-            >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div>
-                  <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" value={editing.firstName || ""} onChange={(e) => setEditing({ ...editing, firstName: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="middleName">Middle name</Label>
-                  <Input id="middleName" value={editing.middleName || ""} onChange={(e) => setEditing({ ...editing, middleName: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" value={editing.lastName || ""} onChange={(e) => setEditing({ ...editing, lastName: e.target.value })} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={editing.email || ""} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="phones">Phones (comma separated)</Label>
-                  <Input id="phones" value={(editing.phones || []).join(", ")} onChange={(e) => setEditing({ ...editing, phones: e.target.value.split(/\s*,\s*/) })} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="company">Company</Label>
-                  <Input id="company" value={editing.company || ""} onChange={(e) => setEditing({ ...editing, company: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="profession">Profession</Label>
-                  <Input id="profession" value={editing.profession || ""} onChange={(e) => setEditing({ ...editing, profession: e.target.value })} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="qualifications">Qualifications</Label>
-                  <Input id="qualifications" value={editing.qualifications || ""} onChange={(e) => setEditing({ ...editing, qualifications: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" value={editing.address || ""} onChange={(e) => setEditing({ ...editing, address: e.target.value })} />
-                </div>
-              </div>
-
-              <div>
-                <Label>Family group</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <Select
-                    value={editing.groupId || "none"}
-                    onValueChange={(val) => setEditing({ ...editing, groupId: val === "none" ? undefined : val })}
-                  >
-                    <SelectTrigger className="w-full sm:w-64">
-                      <SelectValue placeholder="Select group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No group</SelectItem>
-                      {groups.map((g) => (
-                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="sm" type="button" onClick={() => setGroupDialogOpen(true)}>
-                    <FolderPlus className="h-4 w-4 mr-2" /> New
-                  </Button>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-                <Button type="submit">Save</Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Delete confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete contact?</AlertDialogTitle>
+            <AlertDialogTitle>Delete client?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the contact and remove it from your local storage.
+              This action cannot be undone. This will permanently delete the client and remove it from your local storage.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -494,4 +401,4 @@ function loadClientsForFilter(clients: ExtClient[], q: string, groupFilter: stri
   return list;
 }
 
-export default Contacts;
+export default ClientList;

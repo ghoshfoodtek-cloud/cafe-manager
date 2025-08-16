@@ -9,17 +9,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, ArrowLeft } from "lucide-react";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import type { Client } from "./Clients";
+import type { Client, ExtClient } from "@/types/client";
 
 const ClientEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [client, setClient] = useState<Client | null>(null);
+  const [client, setClient] = useState<ExtClient | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const clients = loadJSON<Client[]>("clients", []);
+    const clients = loadJSON<ExtClient[]>("clients", []);
     const foundClient = clients.find(c => c.id === id);
     setClient(foundClient || null);
     setLoading(false);
@@ -73,7 +73,7 @@ const ClientEdit = () => {
     e.preventDefault();
     if (!client) return;
 
-    const clients = loadJSON<Client[]>("clients", []);
+    const clients = loadJSON<ExtClient[]>("clients", []);
     const updatedClients = clients.map(c => c.id === client.id ? client : c);
     saveJSON("clients", updatedClients);
 
@@ -85,7 +85,7 @@ const ClientEdit = () => {
     navigate("/clients");
   };
 
-  const updateField = (field: keyof Client, value: any) => {
+  const updateField = (field: keyof ExtClient, value: any) => {
     setClient(prev => prev ? { ...prev, [field]: value } : null);
   };
 

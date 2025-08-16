@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useCallSession } from "@/hooks/useCallSession";
 import { addCallLog } from "@/lib/calls";
-import type { Client } from "@/pages/Clients";
+import type { Client } from "@/types/client";
 import { Phone, Mic, MicOff, Save, ExternalLink, StopCircle } from "lucide-react";
 
 interface InCallSheetProps {

@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadJSON } from "@/lib/storage";
-import type { Client } from "./Clients";
+import type { Client } from "@/types/client";
 import type { Order } from "./Orders";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 

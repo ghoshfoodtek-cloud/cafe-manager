@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/components/ui/use-toast";
 import { loadJSON, saveJSON } from "@/lib/storage";
-import type { Client } from "./Clients";
+import type { Client } from "@/types/client";
 
 const schema = z.object({
   fullName: z.string().min(2, "Name is required"),
