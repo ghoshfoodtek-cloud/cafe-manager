@@ -40,8 +40,19 @@ const ClientEdit = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.style.display = 'none';
+    
+    const cleanup = () => {
+      document.body.removeChild(input);
+      // Force remove any potential scroll lock
+      document.body.style.overflow = '';
+      document.body.removeAttribute('data-scroll-locked');
+    };
+    
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
+      cleanup();
+      
       if (!file) return;
       
       const reader = new FileReader();
@@ -51,6 +62,10 @@ const ClientEdit = () => {
       };
       reader.readAsDataURL(file);
     };
+    
+    input.oncancel = cleanup;
+    
+    document.body.appendChild(input);
     input.click();
   };
 
