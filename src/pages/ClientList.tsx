@@ -211,7 +211,7 @@ const ClientList = () => {
         <div className="sm:col-span-2 relative">
           <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name or phone"
+            placeholder="Search by name, phone, city, address, profession..."
             className="pl-8"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -392,6 +392,13 @@ function loadClientsForFilter(clients: ExtClient[], q: string, groupFilter: stri
       [c.firstName, c.middleName, c.lastName].filter(Boolean).join(" ").toLowerCase().includes(q) ||
       (c.email?.toLowerCase().includes(q) || false) ||
       (c.company?.toLowerCase().includes(q) || false) ||
+      (c.address?.toLowerCase().includes(q) || false) ||
+      (c.city?.toLowerCase().includes(q) || false) ||
+      (c.village?.toLowerCase().includes(q) || false) ||
+      (c.block?.toLowerCase().includes(q) || false) ||
+      (c.profession?.toLowerCase().includes(q) || false) ||
+      (c.qualifications?.toLowerCase().includes(q) || false) ||
+      (c.age?.toString().includes(q) || false) ||
       c.phones?.some((p) => p.toLowerCase().includes(q))
     );
   }
