@@ -13,6 +13,7 @@ import OrderDetail from "./pages/OrderDetail";
 import OrdersBin from "./pages/OrdersBin";
 import CreateOrder from "./pages/CreateOrder";
 import AddGlobalEvent from "./pages/AddGlobalEvent";
+import EventLogs from "./pages/EventLogs";
 import CallLogs from "./pages/CallLogs";
 import AppHeader from "./components/layout/AppHeader";
 import FloatingFab from "./components/layout/FloatingActions";
@@ -35,6 +36,7 @@ const App = () => (
         <Route path="/orders/bin" element={<OrdersBin />} />
         <Route path="/orders/:id" element={<OrderDetail />} />
         <Route path="/events/new" element={<AddGlobalEvent />} />
+        <Route path="/events" element={<EventLogs />} />
         <Route path="/calls" element={<CallLogs />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
