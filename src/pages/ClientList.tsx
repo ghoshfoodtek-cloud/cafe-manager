@@ -4,6 +4,8 @@ import { Helmet } from "react-helmet-async";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Phone,
   Notebook,
@@ -15,10 +17,14 @@ import {
   LayoutGrid,
   Rows3,
   FolderPlus,
+  Users,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import type { Client, ExtClient, ContactGroup } from "@/types/client";
 import InCallSheet from "@/components/calls/InCallSheet";
+import { GroupAssignmentDialog } from "@/components/clients/GroupAssignmentDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +75,9 @@ const ClientList = () => {
   const [groups, setGroups] = useState<ContactGroup[]>(loadJSON<ContactGroup[]>(GROUPS_KEY, []));
   const [groupFilter, setGroupFilter] = useState<string>("all");
 
+  // Bulk selection
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [toDelete, setToDelete] = useState<ExtClient | null>(null);
@@ -76,6 +85,9 @@ const ClientList = () => {
   // New group dialog
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+
+  // Group assignment dialog
+  const [groupAssignmentOpen, setGroupAssignmentOpen] = useState(false);
 
   // Refresh client list when component mounts or when returning from edit
   useEffect(() => {
@@ -125,6 +137,42 @@ const ClientList = () => {
     const q = query.trim().toLowerCase();
     return loadClientsForFilter(clients, q, groupFilter);
   }, [clients, query, groupFilter]);
+
+  const getGroupName = (groupId?: string) => {
+    if (!groupId) return "Unassigned";
+    const group = groups.find(g => g.id === groupId);
+    return group?.name || "Unknown";
+  };
+
+  const getGroupColor = (groupId?: string) => {
+    if (!groupId) return "bg-muted text-muted-foreground";
+    return "bg-primary/10 text-primary";
+  };
+
+  const handleBulkSelect = (clientId: string, checked: boolean) => {
+    setSelectedClientIds(prev => 
+      checked 
+        ? [...prev, clientId] 
+        : prev.filter(id => id !== clientId)
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedClientIds(selectedClientIds.length === filtered.length ? [] : filtered.map(c => c.id));
+  };
+
+  const handleBulkGroupAssignment = () => {
+    setGroupAssignmentOpen(true);
+  };
+
+  const clearSelection = () => {
+    setSelectedClientIds([]);
+  };
+
+  const handleSingleGroupAssignment = (clientId: string) => {
+    setSelectedClientIds([clientId]);
+    setGroupAssignmentOpen(true);
+  };
 
   function displayName(c: ExtClient) {
     const name = [c.firstName, c.middleName, c.lastName].filter(Boolean).join(" ");
@@ -224,8 +272,9 @@ const ClientList = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All groups</SelectItem>
+              <SelectItem value="none">Unassigned</SelectItem>
               {groups.map((g) => (
-                <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                <SelectItem key={g.id} value={g.id}>{g.name} ({clients.filter(c => c.groupId === g.id).length})</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -235,6 +284,49 @@ const ClientList = () => {
         </div>
       </section>
 
+      {/* Bulk Actions Bar */}
+      {selectedClientIds.length > 0 && (
+        <section className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                {selectedClientIds.length} client{selectedClientIds.length > 1 ? 's' : ''} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkGroupAssignment}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Assign to Group
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearSelection}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Clear Selection
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* Select All Checkbox */}
+      {filtered.length > 0 && (
+        <section className="mb-4 flex items-center gap-2">
+          <Checkbox
+            id="selectAll"
+            checked={selectedClientIds.length === filtered.length}
+            onCheckedChange={handleSelectAll}
+          />
+          <Label htmlFor="selectAll" className="text-sm">
+            Select all {filtered.length} client{filtered.length > 1 ? 's' : ''}
+          </Label>
+        </section>
+      )}
+
       {filtered.length === 0 ? (
         <Card className="p-6 text-muted-foreground">No clients found.</Card>
       ) : layout === "grid" ? (
@@ -243,6 +335,10 @@ const ClientList = () => {
             <li key={c.id} className="rounded-md border p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={selectedClientIds.includes(c.id)}
+                    onCheckedChange={(checked) => handleBulkSelect(c.id, checked as boolean)}
+                  />
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary font-medium">
                     {displayName(c)
                       .split(" ")
@@ -267,24 +363,30 @@ const ClientList = () => {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link to={`/clients/${c.id}/edit`}>
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link to={`/clients/${c.id}/edit`}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleSingleGroupAssignment(c.id)}>
+                      <UserPlus className="mr-2 h-4 w-4" /> Assign to Group
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <Button size="sm" variant="outline" onClick={() => openCall(c, c.phones[0] || "")}>
                   <Notebook className="mr-2 h-4 w-4" /> Notes
                 </Button>
+                <Badge variant="outline" className={`text-xs ${getGroupColor(c.groupId)}`}>
+                  {getGroupName(c.groupId)}
+                </Badge>
               </div>
               {c.company && (
                 <div className="mt-3 text-sm text-muted-foreground">{c.company}</div>
@@ -297,6 +399,10 @@ const ClientList = () => {
           {filtered.map((c) => (
             <li key={c.id} className={`flex items-center justify-between p-3 ${layout === "compact" ? "py-2" : "py-3"}`}>
               <div className="flex items-center gap-3">
+                <Checkbox
+                  checked={selectedClientIds.includes(c.id)}
+                  onCheckedChange={(checked) => handleBulkSelect(c.id, checked as boolean)}
+                />
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary font-medium">
                   {displayName(c)
                     .split(" ")
@@ -304,8 +410,13 @@ const ClientList = () => {
                     .slice(0, 2)
                     .join("")}
                 </div>
-                <div>
-                  <div className="font-medium">{displayName(c)}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{displayName(c)}</span>
+                    <Badge variant="outline" className={`text-xs ${getGroupColor(c.groupId)}`}>
+                      {getGroupName(c.groupId)}
+                    </Badge>
+                  </div>
                   <div className="text-sm text-muted-foreground">{c.phones[0] || "No phone"}</div>
                 </div>
               </div>
@@ -324,17 +435,20 @@ const ClientList = () => {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link to={`/clients/${c.id}/edit`}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link to={`/clients/${c.id}/edit`}>
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSingleGroupAssignment(c.id)}>
+                        <UserPlus className="mr-2 h-4 w-4" /> Assign to Group
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </li>
@@ -380,6 +494,23 @@ const ClientList = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Group Assignment Dialog */}
+      <GroupAssignmentDialog
+        open={groupAssignmentOpen}
+        onOpenChange={(open) => {
+          setGroupAssignmentOpen(open);
+          if (!open) {
+            setSelectedClientIds([]);
+          }
+        }}
+        clients={clients}
+        selectedClientIds={selectedClientIds}
+        onClientsUpdated={(updatedClients) => {
+          setClients(updatedClients);
+          setSelectedClientIds([]);
+        }}
+      />
     </main>
   );
 };
@@ -403,7 +534,11 @@ function loadClientsForFilter(clients: ExtClient[], q: string, groupFilter: stri
     );
   }
   if (groupFilter !== "all") {
-    list = list.filter((c) => (c.groupId || "none") === groupFilter);
+    if (groupFilter === "none") {
+      list = list.filter((c) => !c.groupId);
+    } else {
+      list = list.filter((c) => c.groupId === groupFilter);
+    }
   }
   return list;
 }

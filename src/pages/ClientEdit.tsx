@@ -6,10 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, ArrowLeft } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Camera, ArrowLeft, Users } from "lucide-react";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import type { Client, ExtClient } from "@/types/client";
+import type { Client, ExtClient, ContactGroup } from "@/types/client";
+
+const GROUPS_KEY = "contactGroups";
 
 const ClientEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,11 +26,14 @@ const ClientEdit = () => {
   const { toast } = useToast();
   const [client, setClient] = useState<ExtClient | null>(null);
   const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState<ContactGroup[]>([]);
 
   useEffect(() => {
     const clients = loadJSON<ExtClient[]>("clients", []);
     const foundClient = clients.find(c => c.id === id);
+    const loadedGroups = loadJSON<ContactGroup[]>(GROUPS_KEY, []);
     setClient(foundClient || null);
+    setGroups(loadedGroups);
     setLoading(false);
   }, [id]);
 
@@ -194,6 +206,38 @@ const ClientEdit = () => {
                   required
                 />
               </div>
+            </div>
+
+            {/* Group Assignment */}
+            <div>
+              <Label htmlFor="group" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Group Assignment
+              </Label>
+              <Select 
+                value={client.groupId || "none"} 
+                onValueChange={(value) => updateField('groupId', value === "none" ? undefined : value)}
+              >
+                <SelectTrigger id="group">
+                  <SelectValue placeholder="Select a group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
+                      Unassigned
+                    </div>
+                  </SelectItem>
+                  {groups.map(group => (
+                    <SelectItem key={group.id} value={group.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        {group.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Address Information */}
