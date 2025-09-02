@@ -4,7 +4,8 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { loadJSON, saveJSON } from "@/lib/storage";
-import { isAdmin, initializeDefaultAdmin } from "@/lib/auth";
+import { initializeUsers } from "@/lib/auth-enhanced";
+import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 
@@ -28,11 +29,12 @@ export type Order = {
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const { canDelete } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    initializeDefaultAdmin();
+    initializeUsers();
     setOrders(loadJSON<Order[]>("orders", []));
   }, []);
 
@@ -83,7 +85,7 @@ const Orders = () => {
                   <div className="mt-2 text-sm">Status: {o.status.replace("_", " ")}</div>
                   <Link to={`/orders/${o.id}`} className="mt-3 inline-block text-sm text-primary underline-offset-4 hover:underline">View timeline</Link>
                 </div>
-                {isAdmin() && (
+                {canDelete && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">

@@ -25,6 +25,7 @@ import { loadJSON, saveJSON } from "@/lib/storage";
 import type { Client, ExtClient, ContactGroup } from "@/types/client";
 import InCallSheet from "@/components/calls/InCallSheet";
 import { GroupAssignmentDialog } from "@/components/clients/GroupAssignmentDialog";
+import { useAuth } from "@/components/auth/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +69,7 @@ const ClientList = () => {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<{ client: ExtClient | null; phone: string | null }>({ client: null, phone: null });
   const [open, setOpen] = useState(false);
+  const { canDelete } = useAuth();
 
   const [layout, setLayout] = useState<"list" | "grid" | "compact">(
     (localStorage.getItem(LAYOUT_KEY) as any) || "list"
@@ -372,10 +374,14 @@ const ClientList = () => {
                     <DropdownMenuItem onClick={() => handleSingleGroupAssignment(c.id)}>
                       <UserPlus className="mr-2 h-4 w-4" /> Assign to Group
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
+                    {canDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -444,10 +450,14 @@ const ClientList = () => {
                       <DropdownMenuItem onClick={() => handleSingleGroupAssignment(c.id)}>
                         <UserPlus className="mr-2 h-4 w-4" /> Assign to Group
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
+                      {canDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(c)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                 </DropdownMenu>
               </div>

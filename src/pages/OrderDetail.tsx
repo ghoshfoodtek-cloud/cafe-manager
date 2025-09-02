@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import { captureFromCamera, pickFromGallery } from "@/lib/capture";
+import { useAuth } from "@/components/auth/AuthContext";
 import type { Order, OrderEvent } from "./Orders";
 import type { Client } from "@/types/client";
 
@@ -14,6 +15,7 @@ const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { canDelete } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [eventTitle, setEventTitle] = useState("");
@@ -145,7 +147,9 @@ const OrderDetail = () => {
           ) : (
             <>
               <Button size="sm" onClick={restoreFromBin}>Restore</Button>
-              <Button size="sm" variant="destructive" onClick={deletePermanently}>Delete Permanently</Button>
+              {canDelete && (
+                <Button size="sm" variant="destructive" onClick={deletePermanently}>Delete Permanently</Button>
+              )}
             </>
           )}
         </div>

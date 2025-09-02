@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { loadJSON, saveJSON } from "@/lib/storage";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth-enhanced";
 import { useToast } from "@/hooks/use-toast";
 import type { GlobalEvent } from "@/types/user";
 

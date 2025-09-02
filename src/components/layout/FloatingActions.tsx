@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, UserPlus, Users, ShoppingCart, Trash2, PhoneCall, Calendar, FileText } from "lucide-react";
+import { Plus, UserPlus, Users, ShoppingCart, Trash2, PhoneCall, Calendar, FileText, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthContext";
 
 const FloatingActions = () => {
   const navigate = useNavigate();
+  const { canDelete, canManageUsers } = useAuth();
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
@@ -46,9 +48,16 @@ const FloatingActions = () => {
           <DropdownMenuItem onSelect={() => navigate("/orders")}> 
             <ShoppingCart className="mr-2 h-4 w-4" /> View Orders
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => navigate("/orders/bin")}> 
-            <Trash2 className="mr-2 h-4 w-4" /> Orders Bin
-          </DropdownMenuItem>
+          {canDelete && (
+            <DropdownMenuItem onSelect={() => navigate("/orders/bin")}> 
+              <Trash2 className="mr-2 h-4 w-4" /> Orders Bin
+            </DropdownMenuItem>
+          )}
+          {canManageUsers && (
+            <DropdownMenuItem onSelect={() => navigate("/users")}> 
+              <Settings className="mr-2 h-4 w-4" /> User Management
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
