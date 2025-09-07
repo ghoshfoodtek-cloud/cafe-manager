@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,24 +72,32 @@ const Login = () => {
         <meta name="description" content="Login to access your CRM system" />
       </Helmet>
       
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Bharat Connect Pro</CardTitle>
+      <div className="min-h-screen bg-background-subtle flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="text-center space-y-3">
+            <div className="mx-auto h-12 w-12 bg-primary rounded-full flex items-center justify-center">
+              <LogIn className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <CardTitle className="text-h2">Bharat Connect Pro</CardTitle>
             <p className="text-muted-foreground">Select your user account to continue</p>
           </CardHeader>
           
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="user-select">Select User</Label>
+          <CardContent className="content-spacing">
+            <div className="tight-spacing">
+              <Label htmlFor="user-select" className="text-sm font-medium">Select User</Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger id="user-select">
+                <SelectTrigger id="user-select" className="h-11">
                   <SelectValue placeholder="Choose a user account" />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.role})
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{user.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {user.role}
+                        </Badge>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -97,14 +106,14 @@ const Login = () => {
 
             <Button 
               onClick={handleLogin} 
-              className="w-full" 
+              className="w-full h-11" 
               disabled={!selectedUserId}
             >
               <LogIn className="w-4 h-4 mr-2" />
               Login
             </Button>
 
-            <div className="text-center">
+            <div className="text-center pt-2">
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -114,19 +123,20 @@ const Login = () => {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Create New Associate</DialogTitle>
+                    <DialogTitle className="text-h3">Create New Associate</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="associate-name">Name</Label>
+                  <div className="content-spacing">
+                    <div className="tight-spacing">
+                      <Label htmlFor="associate-name" className="text-sm font-medium">Name</Label>
                       <Input
                         id="associate-name"
                         value={newAssociateName}
                         onChange={(e) => setNewAssociateName(e.target.value)}
                         placeholder="Enter associate name"
+                        className="h-11"
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       <Button onClick={handleCreateAssociate} className="flex-1">
                         Create
                       </Button>

@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import { initializeUsers } from "@/lib/auth-enhanced";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, Notebook, ArrowRight } from "lucide-react";
 
 export type OrderEvent = {
   id: string;
@@ -54,6 +56,23 @@ const Orders = () => {
     });
   };
 
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "status-pending";
+      case "in_progress":
+        return "status-in-progress";
+      case "completed":
+        return "status-completed";
+      default:
+        return "";
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase());
+  };
+
 
   return (
     <main className="container mx-auto py-6">
@@ -62,28 +81,71 @@ const Orders = () => {
         <meta name="description" content="Track detailed order timelines, add events, and manage documents." />
         <link rel="canonical" href="/orders" />
       </Helmet>
-      <section className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Orders</h1>
-        <div className="flex items-center gap-2">
-          <Link to="/orders/bin"><Button variant="outline">View Bin</Button></Link>
-          <Button onClick={createOrder}>Create Order</Button>
+      <section className="mb-8 section-spacing">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-h1">Orders</h1>
+            <p className="text-muted-foreground mt-1">Track detailed order timelines and manage documents</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/orders/bin">
+              <Button variant="outline" size="sm">
+                <Trash2 className="h-4 w-4 mr-2" />
+                View Bin
+              </Button>
+            </Link>
+            <Button onClick={createOrder}>Create Order</Button>
+          </div>
         </div>
       </section>
 
       {orders.filter(o => !o.deletedAt).length === 0 ? (
-        <div className="rounded-lg border p-6 text-muted-foreground">
-          No active orders. Create a new order or view items in the bin.
-        </div>
+        <Card className="empty-state">
+          <div className="space-y-4">
+            <div className="h-16 w-16 mx-auto bg-muted rounded-full flex items-center justify-center">
+              <Notebook className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="text-h4 mb-2">No active orders</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get started by creating your first order or check items in the bin.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={createOrder}>Create Order</Button>
+              <Link to="/orders/bin">
+                <Button variant="outline">View Bin</Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {orders.filter(o => !o.deletedAt).map((o) => (
-            <li key={o.id} className="rounded-lg border p-4">
+            <Card key={o.id} className="interactive-card p-6">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="mb-1 text-lg font-medium">{o.title}</div>
-                  <div className="text-sm text-muted-foreground">Created: {new Date(o.createdAt).toLocaleString()}</div>
-                  <div className="mt-2 text-sm">Status: {o.status.replace("_", " ")}</div>
-                  <Link to={`/orders/${o.id}`} className="mt-3 inline-block text-sm text-primary underline-offset-4 hover:underline">View timeline</Link>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h3 className="text-h4 mb-1">{o.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Created: {new Date(o.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant="status"
+                      className={getStatusClass(o.status)}
+                    >
+                      {formatStatus(o.status)}
+                    </Badge>
+                  </div>
+                  <Link 
+                    to={`/orders/${o.id}`} 
+                    className="inline-flex items-center text-sm text-primary hover:text-primary/80 font-medium"
+                  >
+                    View timeline
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Link>
                 </div>
                 {canDelete && (
                   <AlertDialog>
@@ -112,9 +174,9 @@ const Orders = () => {
                   </AlertDialog>
                 )}
               </div>
-            </li>
+            </Card>
           ))}
-        </ul>
+        </div>
       )}
     </main>
   );

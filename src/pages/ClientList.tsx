@@ -224,12 +224,15 @@ const ClientList = () => {
         <link rel="canonical" href="/clients" />
       </Helmet>
 
-      <section className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Clients</h1>
-        <div className="flex items-center gap-1">
+      <section className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-h1">Clients</h1>
+          <p className="text-muted-foreground mt-1">Manage your client contacts and communication</p>
+        </div>
+        <div className="flex items-center gap-2 bg-background-subtle rounded-lg p-1">
           <Button
             variant={layout === "list" ? "secondary" : "ghost"}
-            size="icon"
+            size="sm"
             aria-label="List layout"
             onClick={() => setLayout("list")}
             title="List layout"
@@ -238,7 +241,7 @@ const ClientList = () => {
           </Button>
           <Button
             variant={layout === "grid" ? "secondary" : "ghost"}
-            size="icon"
+            size="sm"
             aria-label="Grid layout"
             onClick={() => setLayout("grid")}
             title="Grid layout"
@@ -247,7 +250,7 @@ const ClientList = () => {
           </Button>
           <Button
             variant={layout === "compact" ? "secondary" : "ghost"}
-            size="icon"
+            size="sm"
             aria-label="Compact layout"
             onClick={() => setLayout("compact")}
             title="Compact layout"
@@ -257,41 +260,43 @@ const ClientList = () => {
         </div>
       </section>
 
-      <section className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="sm:col-span-2 relative">
-          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, phone, city, address, profession..."
-            className="pl-8"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={groupFilter} onValueChange={setGroupFilter}>
-            <SelectTrigger aria-label="Filter by group">
-              <SelectValue placeholder="All groups" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All groups</SelectItem>
-              <SelectItem value="none">Unassigned</SelectItem>
-              {groups.map((g) => (
-                <SelectItem key={g.id} value={g.id}>{g.name} ({clients.filter(c => c.groupId === g.id).length})</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" onClick={() => setGroupDialogOpen(true)}>
-            <FolderPlus className="h-4 w-4 mr-2" /> New Group
-          </Button>
+      <section className="mb-6 section-spacing">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-2 relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, phone, city, address, profession..."
+              className="pl-10 h-11"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <Select value={groupFilter} onValueChange={setGroupFilter}>
+              <SelectTrigger aria-label="Filter by group" className="flex-1">
+                <SelectValue placeholder="All groups" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All groups</SelectItem>
+                <SelectItem value="none">Unassigned</SelectItem>
+                {groups.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>{g.name} ({clients.filter(c => c.groupId === g.id).length})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => setGroupDialogOpen(true)} className="whitespace-nowrap">
+              <FolderPlus className="h-4 w-4 mr-2" /> Group
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Bulk Actions Bar */}
       {selectedClientIds.length > 0 && (
-        <section className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+        <section className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-primary">
                 {selectedClientIds.length} client{selectedClientIds.length > 1 ? 's' : ''} selected
               </span>
               <Button
@@ -309,7 +314,7 @@ const ClientList = () => {
               onClick={clearSelection}
             >
               <X className="h-4 w-4 mr-2" />
-              Clear Selection
+              Clear
             </Button>
           </div>
         </section>
@@ -317,20 +322,35 @@ const ClientList = () => {
 
       {/* Select All Checkbox */}
       {filtered.length > 0 && (
-        <section className="mb-4 flex items-center gap-2">
+        <section className="mb-6 flex items-center gap-3 p-3 bg-background-subtle rounded-lg">
           <Checkbox
             id="selectAll"
             checked={selectedClientIds.length === filtered.length}
             onCheckedChange={handleSelectAll}
           />
-          <Label htmlFor="selectAll" className="text-sm">
+          <Label htmlFor="selectAll" className="text-sm text-muted-foreground">
             Select all {filtered.length} client{filtered.length > 1 ? 's' : ''}
           </Label>
         </section>
       )}
 
       {filtered.length === 0 ? (
-        <Card className="p-6 text-muted-foreground">No clients found.</Card>
+        <Card className="empty-state">
+          <div className="space-y-3">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
+            <div>
+              <h3 className="text-h4 mb-2">No clients found</h3>
+              <p className="text-sm text-muted-foreground">
+                {query ? "Try adjusting your search terms or filters" : "Get started by adding your first client"}
+              </p>
+            </div>
+            {!query && (
+              <Button asChild className="mt-4">
+                <Link to="/clients/new">Add Client</Link>
+              </Button>
+            )}
+          </div>
+        </Card>
       ) : layout === "grid" ? (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
