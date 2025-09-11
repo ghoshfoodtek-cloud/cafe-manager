@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthContext";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { MainLayout } from "@/components/layout/MainLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ClientList from "./pages/ClientList";
@@ -19,8 +20,6 @@ import EventLogs from "./pages/EventLogs";
 import CallLogs from "./pages/CallLogs";
 import Login from "./pages/Login";
 import UserManagement from "./pages/UserManagement";
-import AppHeader from "./components/layout/AppHeader";
-import FloatingFab from "./components/layout/FloatingActions";
 
 const queryClient = new QueryClient();
 
@@ -34,31 +33,31 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/*" element={
             <RequireAuth>
-              <AppHeader />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/clients" element={<ClientList />} />
-                <Route path="/clients/new" element={<ClientNew />} />
-                <Route path="/clients/:id/edit" element={<ClientEdit />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/orders/new" element={<CreateOrder />} />
-                <Route path="/orders/bin" element={
-                  <RequireAuth requireAdmin>
-                    <OrdersBin />
-                  </RequireAuth>
-                } />
-                <Route path="/orders/:id" element={<OrderDetail />} />
-                <Route path="/events/new" element={<AddGlobalEvent />} />
-                <Route path="/events" element={<EventLogs />} />
-                <Route path="/calls" element={<CallLogs />} />
-                <Route path="/users" element={
-                  <RequireAuth requireAdmin>
-                    <UserManagement />
-                  </RequireAuth>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <FloatingFab />
+              <MainLayout>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/clients" element={<ClientList />} />
+                  <Route path="/clients/new" element={<ClientNew />} />
+                  <Route path="/clients/:id/edit" element={<ClientEdit />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/orders/new" element={<CreateOrder />} />
+                  <Route path="/orders/bin" element={
+                    <RequireAuth requireAdmin>
+                      <OrdersBin />
+                    </RequireAuth>
+                  } />
+                  <Route path="/orders/:id" element={<OrderDetail />} />
+                  <Route path="/events/new" element={<AddGlobalEvent />} />
+                  <Route path="/events" element={<EventLogs />} />
+                  <Route path="/calls" element={<CallLogs />} />
+                  <Route path="/users" element={
+                    <RequireAuth requireAdmin>
+                      <UserManagement />
+                    </RequireAuth>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </MainLayout>
             </RequireAuth>
           } />
         </Routes>
