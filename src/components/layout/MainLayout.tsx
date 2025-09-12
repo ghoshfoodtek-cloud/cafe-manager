@@ -12,6 +12,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const { user, canManageUsers, refreshAuth } = useAuth();
+  const isMobile = useIsMobile();
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
@@ -64,9 +65,12 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
           
           {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          <main className={`flex-1 overflow-auto ${isMobile ? 'pb-20' : ''}`}>
             {children}
           </main>
+
+          {/* Mobile Bottom Navigation */}
+          <BottomNavigation />
         </div>
       </div>
     </SidebarProvider>
