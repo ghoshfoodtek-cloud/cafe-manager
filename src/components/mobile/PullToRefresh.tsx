@@ -42,9 +42,7 @@ export const PullToRefresh = ({
           transform: y.to(val => `translateY(${val}px)`),
         }}
         className="min-h-full"
-        onTouchStart={handlers.onTouchStart}
-        onTouchMove={handlers.onTouchMove}
-        onTouchEnd={handlers.onTouchEnd}
+        {...handlers}
       >
         {children}
       </animated.div>

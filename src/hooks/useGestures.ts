@@ -73,19 +73,23 @@ export const useSwipeGestures = (
 export const useSwipeAnimation = (initialX = 0) => {
   const [{ x }, api] = useSpring(() => ({ x: initialX }));
 
-  const handlers = useGesture({
+  const bind = useGesture({
     onDrag: ({ movement: [mx], down }) => {
       api.start({ x: down ? mx : 0, immediate: down });
     },
   });
 
-  return { x, handlers, reset: () => api.start({ x: 0 }) };
+  return { 
+    x, 
+    handlers: bind, 
+    reset: () => api.start({ x: 0 }) 
+  };
 };
 
 export const usePullToRefresh = (onRefresh: () => Promise<void> | void) => {
   const [{ y }, api] = useSpring(() => ({ y: 0 }));
 
-  const handlers = useGesture({
+  const bind = useGesture({
     onDrag: ({ movement: [, my], direction: [, dy], last, velocity }) => {
       if (my < 0) return; // Only allow pull down
 
@@ -105,5 +109,8 @@ export const usePullToRefresh = (onRefresh: () => Promise<void> | void) => {
     },
   });
 
-  return { y, handlers };
+  return { 
+    y, 
+    handlers: bind 
+  };
 };

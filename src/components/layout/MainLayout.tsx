@@ -5,6 +5,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { BottomNavigation } from "@/components/mobile/BottomNavigation";
 
 interface MainLayoutProps {
   children: React.ReactNode;
