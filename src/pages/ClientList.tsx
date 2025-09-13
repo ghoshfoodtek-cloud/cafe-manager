@@ -26,6 +26,11 @@ import type { Client, ExtClient, ContactGroup } from "@/types/client";
 import InCallSheet from "@/components/calls/InCallSheet";
 import { GroupAssignmentDialog } from "@/components/clients/GroupAssignmentDialog";
 import { useAuth } from "@/components/auth/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileClientCard } from "@/components/mobile/MobileClientCard";
+import { PullToRefresh } from "@/components/mobile/PullToRefresh";
+import { useMobileNavigation } from "@/hooks/useMobileNavigation";
+import { Home, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,6 +75,15 @@ const ClientList = () => {
   const [selected, setSelected] = useState<{ client: ExtClient | null; phone: string | null }>({ client: null, phone: null });
   const [open, setOpen] = useState(false);
   const { canDelete } = useAuth();
+  const isMobile = useIsMobile();
+
+  const navigationSections = [
+    { id: 'dashboard', path: '/', title: 'Dashboard', icon: Home },
+    { id: 'clients', path: '/clients', title: 'Clients', icon: Users },
+    { id: 'orders', path: '/orders', title: 'Orders', icon: FileText },
+  ];
+
+  const { swipeGestures } = useMobileNavigation(navigationSections);
 
   const [layout, setLayout] = useState<"list" | "grid" | "compact">(
     (localStorage.getItem(LAYOUT_KEY) as any) || "list"
@@ -139,6 +153,13 @@ const ClientList = () => {
     const q = query.trim().toLowerCase();
     return loadClientsForFilter(clients, q, groupFilter);
   }, [clients, query, groupFilter]);
+
+  const refreshClients = () => {
+    const storedClients = loadJSON<ExtClient[]>("clients", []);
+    const storedGroups = loadJSON<ContactGroup[]>(GROUPS_KEY, []);
+    setClients(storedClients);
+    setGroups(storedGroups);
+  };
 
   const getGroupName = (groupId?: string) => {
     if (!groupId) return "Unassigned";
@@ -217,7 +238,7 @@ const ClientList = () => {
   }
 
   return (
-    <main className="container mx-auto py-6">
+    <main className="container mx-auto py-6" {...(isMobile ? swipeGestures : {})}>
       <Helmet>
         <title>Clients | Bharat Connect Pro</title>
         <meta name="description" content="Manage client contacts with quick call, logs, notes, and productivity tools." />
@@ -351,6 +372,24 @@ const ClientList = () => {
             )}
           </div>
         </Card>
+      ) : isMobile ? (
+        <PullToRefresh onRefresh={refreshClients}>
+          <div className="space-y-4">
+            {filtered.map((client) => (
+              <MobileClientCard
+                key={client.id}
+                client={client}
+                onCall={(phone) => openCall(client, phone)}
+                onDelete={() => handleDelete(client)}
+                onGroupAssign={() => handleSingleGroupAssignment(client.id)}
+                isSelected={selectedClientIds.includes(client.id)}
+                onSelect={(checked) => handleBulkSelect(client.id, checked)}
+                getGroupName={getGroupName}
+                getGroupColor={getGroupColor}
+              />
+            ))}
+          </div>
+        </PullToRefresh>
       ) : layout === "grid" ? (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (

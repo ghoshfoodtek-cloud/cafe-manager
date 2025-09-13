@@ -10,6 +10,11 @@ import { initializeUsers } from "@/lib/auth-enhanced";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Notebook, ArrowRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileOrderCard } from "@/components/mobile/MobileOrderCard";
+import { PullToRefresh } from "@/components/mobile/PullToRefresh";
+import { useMobileNavigation } from "@/hooks/useMobileNavigation";
+import { Home, Users as UsersIcon, FileText } from "lucide-react";
 
 export type OrderEvent = {
   id: string;
@@ -34,11 +39,24 @@ const Orders = () => {
   const { canDelete } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+
+  const navigationSections = [
+    { id: 'dashboard', path: '/', title: 'Dashboard', icon: Home },
+    { id: 'clients', path: '/clients', title: 'Clients', icon: UsersIcon },
+    { id: 'orders', path: '/orders', title: 'Orders', icon: FileText },
+  ];
+
+  const { swipeGestures } = useMobileNavigation(navigationSections);
 
   useEffect(() => {
     initializeUsers();
     setOrders(loadJSON<Order[]>("orders", []));
   }, []);
+
+  const refreshOrders = () => {
+    setOrders(loadJSON<Order[]>("orders", []));
+  };
 
   const createOrder = () => {
     navigate("/orders/new");
@@ -75,7 +93,7 @@ const Orders = () => {
 
 
   return (
-    <main className="container mx-auto py-6">
+    <main className="container mx-auto py-6" {...(isMobile ? swipeGestures : {})}>
       <Helmet>
         <title>Orders & Timelines | Bharat Connect Pro</title>
         <meta name="description" content="Track detailed order timelines, add events, and manage documents." />
@@ -119,6 +137,20 @@ const Orders = () => {
             </div>
           </div>
         </Card>
+      ) : isMobile ? (
+        <PullToRefresh onRefresh={refreshOrders}>
+          <div className="space-y-4">
+            {orders.filter(o => !o.deletedAt).map((order) => (
+              <MobileOrderCard
+                key={order.id}
+                order={order}
+                onDelete={() => deleteOrder(order.id)}
+                getStatusClass={getStatusClass}
+                formatStatus={formatStatus}
+              />
+            ))}
+          </div>
+        </PullToRefresh>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {orders.filter(o => !o.deletedAt).map((o) => (

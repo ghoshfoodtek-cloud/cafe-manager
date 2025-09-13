@@ -42,7 +42,7 @@ export const PullToRefresh = ({
           transform: y.to(val => `translateY(${val}px)`),
         }}
         className="min-h-full"
-        {...handlers}
+        {...(handlers as any)}
       >
         {children}
       </animated.div>

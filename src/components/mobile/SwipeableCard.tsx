@@ -102,7 +102,7 @@ export const SwipeableCard = ({
       <animated.div
         style={{ x }}
         className={cn("relative bg-background", className)}
-        {...handlers}
+        {...(handlers as any)}
         onTouchEnd={(e) => {
           const currentX = x.get();
           if (Math.abs(currentX) > threshold) {
