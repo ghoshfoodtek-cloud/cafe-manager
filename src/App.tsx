@@ -3,8 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/components/auth/AuthContext";
-import { RequireAuth } from "@/components/auth/RequireAuth";
+import { SupabaseAuthProvider } from "@/contexts/SupabaseAuthContext";
+import { SupabaseRequireAuth } from "@/components/auth/SupabaseRequireAuth";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -18,7 +18,7 @@ import CreateOrder from "./pages/CreateOrder";
 import AddGlobalEvent from "./pages/AddGlobalEvent";
 import EventLogs from "./pages/EventLogs";
 import CallLogs from "./pages/CallLogs";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient();
@@ -26,13 +26,13 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
+      <SupabaseAuthProvider>
         <Toaster />
         <Sonner />
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/*" element={
-            <RequireAuth>
+            <SupabaseRequireAuth>
               <MainLayout>
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -42,26 +42,26 @@ const App = () => (
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/orders/new" element={<CreateOrder />} />
                   <Route path="/orders/bin" element={
-                    <RequireAuth requireAdmin>
+                    <SupabaseRequireAuth requireAdmin>
                       <OrdersBin />
-                    </RequireAuth>
+                    </SupabaseRequireAuth>
                   } />
                   <Route path="/orders/:id" element={<OrderDetail />} />
                   <Route path="/events/new" element={<AddGlobalEvent />} />
                   <Route path="/events" element={<EventLogs />} />
                   <Route path="/calls" element={<CallLogs />} />
                   <Route path="/users" element={
-                    <RequireAuth requireAdmin>
+                    <SupabaseRequireAuth requireAdmin>
                       <UserManagement />
-                    </RequireAuth>
+                    </SupabaseRequireAuth>
                   } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </MainLayout>
-            </RequireAuth>
+            </SupabaseRequireAuth>
           } />
         </Routes>
-      </AuthProvider>
+      </SupabaseAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

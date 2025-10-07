@@ -1,18 +1,18 @@
 import { Link, NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/auth/AuthContext";
-import { logout } from "@/lib/auth-enhanced";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { signOut } from "@/lib/supabase-auth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { User, LogOut, Settings } from "lucide-react";
 
 const AppHeader = () => {
-  const { user, canManageUsers, refreshAuth } = useAuth();
+  const { profile, canManageUsers } = useSupabaseAuth();
 
-  const handleLogout = () => {
-    logout();
-    refreshAuth();
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = '/auth';
   };
 
   return (
@@ -62,12 +62,12 @@ const AppHeader = () => {
                   <User className="w-4 h-4" />
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
-                  <span className="text-sm font-medium">{user?.name}</span>
+                  <span className="text-sm font-medium">{profile?.name}</span>
                   <Badge 
-                    variant={user?.role === 'admin' ? 'default' : 'secondary'} 
+                    variant={profile?.role === 'admin' ? 'default' : 'secondary'} 
                     className="text-xs capitalize"
                   >
-                    {user?.role}
+                    {profile?.role || 'user'}
                   </Badge>
                 </div>
               </Button>
