@@ -3,16 +3,31 @@ import { Helmet } from "react-helmet-async";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { loadCallLogs, saveCallLogs, type CallLog } from "@/lib/calls";
-import { Play, Trash2, Search, FileText } from "lucide-react";
+import { getCallLogs, deleteCallLog, type CallLog } from "@/lib/supabase-call-logs";
+import { Play, Trash2, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const CallLogs = () => {
   const [logs, setLogs] = useState<CallLog[]>([]);
   const [query, setQuery] = useState("");
+  const { toast } = useToast();
 
   useEffect(() => {
-    setLogs(loadCallLogs());
-  }, []);
+    const loadLogs = async () => {
+      try {
+        const data = await getCallLogs();
+        setLogs(data);
+      } catch (error) {
+        console.error("Error loading call logs:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load call logs",
+          variant: "destructive",
+        });
+      }
+    };
+    loadLogs();
+  }, [toast]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -20,10 +35,22 @@ const CallLogs = () => {
     return logs.filter((l) => l.clientName.toLowerCase().includes(q) || l.phone.includes(q));
   }, [logs, query]);
 
-  const remove = (id: string) => {
-    const next = logs.filter((l) => l.id !== id);
-    setLogs(next);
-    saveCallLogs(next);
+  const remove = async (id: string) => {
+    try {
+      await deleteCallLog(id);
+      setLogs((prev) => prev.filter((l) => l.id !== id));
+      toast({
+        title: "Call log deleted",
+        description: "The call log has been removed",
+      });
+    } catch (error) {
+      console.error("Error deleting call log:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete call log",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

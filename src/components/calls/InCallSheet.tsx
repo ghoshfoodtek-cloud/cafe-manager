@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useCallSession } from "@/hooks/useCallSession";
-import { addCallLog } from "@/lib/calls";
+import { createCallLog } from "@/lib/supabase-call-logs";
 import type { Client } from "@/types/client";
 import { Phone, Mic, MicOff, Save, ExternalLink, StopCircle } from "lucide-react";
 
@@ -27,18 +27,25 @@ const InCallSheet = ({ open, onOpenChange, client, phone }: InCallSheetProps) =>
 
   const endAndSave = async () => {
     if (!client || !phone) return;
-    const result = await session.stop();
-    const log = {
-      id: String(Date.now()),
-      clientId: client.id,
-      clientName: client.fullName,
-      phone,
-      ...result,
-      startedAt: result.startedAt || new Date().toISOString(),
-    };
-    addCallLog(log);
-    toast({ title: "Call saved", description: `Logged call with ${client.fullName}` });
-    onOpenChange(false);
+    try {
+      const result = await session.stop();
+      await createCallLog({
+        clientId: client.id,
+        clientName: client.fullName,
+        phone,
+        ...result,
+        startedAt: result.startedAt || new Date().toISOString(),
+      });
+      toast({ title: "Call saved", description: `Logged call with ${client.fullName}` });
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving call log:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to save call log",
+        variant: "destructive"
+      });
+    }
   };
 
   const discard = () => {
