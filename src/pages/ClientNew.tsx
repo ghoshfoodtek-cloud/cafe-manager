@@ -13,13 +13,20 @@ import { createClient } from "@/lib/supabase-clients";
 import type { ExtClient } from "@/types/client";
 
 const schema = z.object({
-  fullName: z.string().min(2, "Name is required"),
+  fullName: z.string().min(2, "Name is required").max(200, "Name too long"),
   age: z.string().optional(),
-  phones: z.string().min(10, "Enter at least one phone"),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  village: z.string().optional(),
-  block: z.string().optional(),
+  phones: z.string()
+    .min(10, "Enter at least one phone number")
+    .max(500, "Phone numbers too long")
+    .regex(/^[0-9,\s]+$/, "Only numbers, commas, and spaces allowed")
+    .refine(val => {
+      const nums = val.split(',').map(p => p.trim()).filter(Boolean);
+      return nums.length > 0 && nums.every(n => /^[6-9]\d{9}$/.test(n));
+    }, "Each phone must be a valid 10-digit Indian mobile (starting with 6-9)"),
+  address: z.string().optional().refine(val => !val || val.length <= 500, "Address too long"),
+  city: z.string().optional().refine(val => !val || val.length <= 100, "City too long"),
+  village: z.string().optional().refine(val => !val || val.length <= 100, "Village too long"),
+  block: z.string().optional().refine(val => !val || val.length <= 100, "Block too long"),
 });
 
 type FormValues = z.infer<typeof schema>;
