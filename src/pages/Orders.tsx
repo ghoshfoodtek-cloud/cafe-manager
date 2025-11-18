@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { loadJSON, saveJSON } from "@/lib/storage";
-import { initializeUsers } from "@/lib/auth-enhanced";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { getOrders, deleteOrder as deleteOrderDB } from "@/lib/supabase-orders";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Notebook, ArrowRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -35,10 +35,33 @@ export type Order = {
 };
 
 const Orders = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const { canDelete } = useAuth();
+  const queryClient = useQueryClient();
+  const { canDelete, user } = useSupabaseAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const { data: allOrders = [], isLoading } = useQuery({
+    queryKey: ['orders'],
+    queryFn: getOrders,
+  });
+
+  const orders = allOrders
+    .filter((o: any) => !o.deleted_at)
+    .map((o: any) => ({
+      id: o.id,
+      title: o.title,
+      clientId: o.client_id || undefined,
+      status: o.status as "pending" | "in_progress" | "completed",
+      createdAt: o.created_at,
+      events: o.order_events?.map((e: any) => ({
+        id: e.id,
+        timestamp: e.created_at,
+        title: e.title,
+        note: e.note || undefined,
+        attachments: e.attachments || undefined,
+      })) || [],
+      deletedAt: o.deleted_at || undefined,
+    }));
   const isMobile = useIsMobile();
 
   const navigationSections = [
@@ -49,29 +72,23 @@ const Orders = () => {
 
   const { swipeGestures } = useMobileNavigation(navigationSections);
 
-  useEffect(() => {
-    initializeUsers();
-    setOrders(loadJSON<Order[]>("orders", []));
-  }, []);
-
-  const refreshOrders = () => {
-    setOrders(loadJSON<Order[]>("orders", []));
-  };
+  const deleteMutation = useMutation({
+    mutationFn: deleteOrderDB,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({
+        title: "Success",
+        description: "Order deleted permanently",
+      });
+    },
+  });
 
   const createOrder = () => {
     navigate("/orders/new");
   };
 
   const deleteOrder = (orderId: string) => {
-    const list = loadJSON<Order[]>("orders", []);
-    const updatedList = list.filter(o => o.id !== orderId);
-    saveJSON("orders", updatedList);
-    setOrders(updatedList);
-    
-    toast({
-      title: "Success",
-      description: "Order deleted permanently",
-    });
+    deleteMutation.mutate(orderId);
   };
 
   const getStatusClass = (status: string) => {
@@ -138,7 +155,7 @@ const Orders = () => {
           </div>
         </Card>
       ) : isMobile ? (
-        <PullToRefresh onRefresh={refreshOrders}>
+        <PullToRefresh onRefresh={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}>
           <div className="space-y-4">
             {orders.filter(o => !o.deletedAt).map((order) => (
               <MobileOrderCard

@@ -21,12 +21,14 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { loadJSON, saveJSON } from "@/lib/storage";
 import type { Client, ExtClient, ContactGroup } from "@/types/client";
 import InCallSheet from "@/components/calls/InCallSheet";
 import { GroupAssignmentDialog } from "@/components/clients/GroupAssignmentDialog";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getClients, deleteClient } from "@/lib/supabase-clients";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { MobileClientCard } from "@/components/mobile/MobileClientCard";
 import { PullToRefresh } from "@/components/mobile/PullToRefresh";
 import { useMobileNavigation } from "@/hooks/useMobileNavigation";
@@ -70,12 +72,30 @@ const GROUPS_KEY = "contactGroups";
 const LAYOUT_KEY = "contactsLayout";
 
 const ClientList = () => {
-  const [clients, setClients] = useState<ExtClient[]>([]);
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<{ client: ExtClient | null; phone: string | null }>({ client: null, phone: null });
   const [open, setOpen] = useState(false);
-  const { canDelete } = useAuth();
+  const { canDelete, user } = useSupabaseAuth();
   const isMobile = useIsMobile();
+  
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ['clients'],
+    queryFn: getClients,
+  });
+  
+  const deleteMutation = useMutation({
+    mutationFn: deleteClient,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setToDelete(null);
+      setDeleteOpen(false);
+    },
+  });
+
+  const remove = (client: ExtClient) => {
+    deleteMutation.mutate(client.id);
+  };
 
   const navigationSections = [
     { id: 'dashboard', path: '/', title: 'Dashboard', icon: Home },
@@ -88,7 +108,7 @@ const ClientList = () => {
   const [layout, setLayout] = useState<"list" | "grid" | "compact">(
     (localStorage.getItem(LAYOUT_KEY) as any) || "list"
   );
-  const [groups, setGroups] = useState<ContactGroup[]>(loadJSON<ContactGroup[]>(GROUPS_KEY, []));
+  const [groups, setGroups] = useState<ContactGroup[]>([]);
   const [groupFilter, setGroupFilter] = useState<string>("all");
 
   // Bulk selection
@@ -105,37 +125,15 @@ const ClientList = () => {
   // Group assignment dialog
   const [groupAssignmentOpen, setGroupAssignmentOpen] = useState(false);
 
-  // Refresh client list when component mounts or when returning from edit
+  // Load groups from Supabase
   useEffect(() => {
-    const refreshClients = () => {
-      const clients = loadJSON<ExtClient[]>("clients", []);
-      setClients(clients);
-    };
-
-    refreshClients();
-
-    // Listen for storage changes to refresh when data is updated
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "clients") {
-        refreshClients();
+    const loadGroups = async () => {
+      const { data } = await supabase.from('contact_groups').select('*');
+      if (data) {
+        setGroups(data.map(g => ({ id: g.id, name: g.name })));
       }
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also refresh when tab becomes visible (user returns from edit)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        refreshClients();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    loadGroups();
   }, []);
 
   // Cleanup: Close InCallSheet when component unmounts to prevent scroll lock
@@ -154,12 +152,6 @@ const ClientList = () => {
     return loadClientsForFilter(clients, q, groupFilter);
   }, [clients, query, groupFilter]);
 
-  const refreshClients = () => {
-    const storedClients = loadJSON<ExtClient[]>("clients", []);
-    const storedGroups = loadJSON<ContactGroup[]>(GROUPS_KEY, []);
-    setClients(storedClients);
-    setGroups(storedGroups);
-  };
 
   const getGroupName = (groupId?: string) => {
     if (!groupId) return "Unassigned";
@@ -219,20 +211,20 @@ const ClientList = () => {
 
   function confirmDelete() {
     if (!toDelete) return;
-    const next = clients.filter((c) => c.id !== toDelete.id);
-    setClients(next);
-    saveJSON("clients", next);
-    setDeleteOpen(false);
-    setToDelete(null);
+    remove(toDelete);
   }
 
-  function createGroup() {
+  async function createGroup() {
     const name = newGroupName.trim();
-    if (!name) return;
-    const group: ContactGroup = { id: `grp_${Date.now()}`, name };
-    const next = [...groups, group];
-    setGroups(next);
-    saveJSON(GROUPS_KEY, next);
+    if (!name || !user) return;
+    const { data, error } = await supabase
+      .from('contact_groups')
+      .insert({ name, created_by: user.id })
+      .select()
+      .single();
+    if (data && !error) {
+      setGroups([...groups, { id: data.id, name: data.name }]);
+    }
     setGroupDialogOpen(false);
     setNewGroupName("");
   }
@@ -373,7 +365,7 @@ const ClientList = () => {
           </div>
         </Card>
       ) : isMobile ? (
-        <PullToRefresh onRefresh={refreshClients}>
+        <PullToRefresh onRefresh={() => queryClient.invalidateQueries({ queryKey: ['clients'] })}>
           <div className="space-y-4">
             {filtered.map((client) => (
               <MobileClientCard
@@ -575,8 +567,8 @@ const ClientList = () => {
         }}
         clients={clients}
         selectedClientIds={selectedClientIds}
-        onClientsUpdated={(updatedClients) => {
-          setClients(updatedClients);
+        onClientsUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ['clients'] });
           setSelectedClientIds([]);
         }}
       />

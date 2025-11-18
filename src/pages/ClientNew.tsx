@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/components/ui/use-toast";
-import { loadJSON, saveJSON } from "@/lib/storage";
-import type { Client } from "@/types/client";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { createClient } from "@/lib/supabase-clients";
+import type { ExtClient } from "@/types/client";
 
 const schema = z.object({
   fullName: z.string().min(2, "Name is required"),
@@ -27,11 +28,19 @@ const ClientNew = () => {
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { fullName: "", age: "", phones: "", address: "", city: "", village: "", block: "" } });
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useSupabaseAuth();
 
-  const onSubmit = (values: FormValues) => {
-    const list = loadJSON<Client[]>("clients", []);
-    const client: Client = {
-      id: String(Date.now()),
+  const onSubmit = async (values: FormValues) => {
+    if (!user) {
+      toast({ 
+        title: "Error", 
+        description: "You must be logged in to create clients",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    const clientData: Omit<ExtClient, 'id' | 'createdAt'> = {
       fullName: values.fullName.trim(),
       age: values.age ? Number(values.age) : undefined,
       phones: values.phones.split(",").map(p => p.trim()).filter(Boolean),
@@ -39,12 +48,19 @@ const ClientNew = () => {
       city: values.city?.trim(),
       village: values.village?.trim(),
       block: values.block?.trim(),
-      createdAt: new Date().toISOString(),
     };
-    list.push(client);
-    saveJSON("clients", list);
-    toast({ title: "Client created", description: `${client.fullName} has been added.` });
-    navigate("/clients");
+    
+    try {
+      await createClient(clientData, user.id);
+      toast({ title: "Client created", description: `${clientData.fullName} has been added.` });
+      navigate("/clients");
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to create client",
+        variant: "destructive" 
+      });
+    }
   };
 
   return (
