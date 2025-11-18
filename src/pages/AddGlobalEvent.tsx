@@ -8,15 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import { getCurrentUser } from "@/lib/auth-enhanced";
 import { useToast } from "@/hooks/use-toast";
-import type { GlobalEvent } from "@/types/user";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const AddGlobalEvent = () => {
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const currentUser = getCurrentUser();
+  const { user, profile } = useSupabaseAuth();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!description.trim()) {
       toast({
         title: "Error",
@@ -26,34 +27,39 @@ const AddGlobalEvent = () => {
       return;
     }
 
-    if (!currentUser) {
+    if (!user || !profile) {
       toast({
         title: "Error",
-        description: "User not found",
+        description: "You must be logged in",
         variant: "destructive",
       });
       return;
     }
 
-    const events = loadJSON<GlobalEvent[]>("globalEvents", []);
-    
-    const newEvent: GlobalEvent = {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      description: description.trim(),
-      createdBy: currentUser.name,
-      createdAt: new Date().toISOString(),
-    };
-    
-    const updatedEvents = [newEvent, ...events];
-    saveJSON("globalEvents", updatedEvents);
-    
-    toast({
-      title: "Success",
-      description: "Event recorded successfully",
-    });
-    
-    navigate("/");
+    try {
+      const { error } = await supabase
+        .from('global_events')
+        .insert({
+          description: description.trim(),
+          created_by: user.id,
+          created_by_name: profile.name,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Event recorded successfully",
+      });
+      
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save event",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCancel = () => {
@@ -98,7 +104,7 @@ const AddGlobalEvent = () => {
           <Label htmlFor="createdBy">Reported By</Label>
           <Input
             id="createdBy"
-            value={currentUser?.name || "Unknown"}
+            value={profile?.name || "Unknown"}
             disabled
             className="mt-1"
           />
