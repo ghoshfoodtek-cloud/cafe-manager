@@ -1,24 +1,26 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BottomNavigation } from "@/components/mobile/BottomNavigation";
+import { signOut } from "@/lib/supabase-auth";
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const { user, canManageUsers, refreshAuth } = useAuth();
+  const { profile, canManageUsers } = useSupabaseAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    refreshAuth();
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
   };
 
   return (
@@ -40,13 +42,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2">
                     <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">{user?.name || user?.id}</span>
+                    <span className="hidden sm:inline">{profile?.name || "User"}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.name || user?.id}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                    <p className="text-sm font-medium">{profile?.name || "User"}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{profile?.role || "associate"}</p>
                   </div>
                   <DropdownMenuSeparator />
                   {canManageUsers && (

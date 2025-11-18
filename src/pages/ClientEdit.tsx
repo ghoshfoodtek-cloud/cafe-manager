@@ -14,11 +14,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Camera, ArrowLeft, Users } from "lucide-react";
-import { loadJSON, saveJSON } from "@/lib/storage";
+import { getClient, updateClient } from "@/lib/supabase-clients";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { Client, ExtClient, ContactGroup } from "@/types/client";
-
-const GROUPS_KEY = "contactGroups";
+import type { ExtClient, ContactGroup } from "@/types/client";
 
 const ClientEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,13 +28,34 @@ const ClientEdit = () => {
   const [groups, setGroups] = useState<ContactGroup[]>([]);
 
   useEffect(() => {
-    const clients = loadJSON<ExtClient[]>("clients", []);
-    const foundClient = clients.find(c => c.id === id);
-    const loadedGroups = loadJSON<ContactGroup[]>(GROUPS_KEY, []);
-    setClient(foundClient || null);
-    setGroups(loadedGroups);
-    setLoading(false);
-  }, [id]);
+    const loadData = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const [clientData, groupsData] = await Promise.all([
+          getClient(id),
+          supabase.from("contact_groups").select("*").order("name")
+        ]);
+
+        setClient(clientData);
+        setGroups(groupsData.data || []);
+      } catch (error) {
+        console.error("Error loading client:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load client data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [id, toast]);
 
   const getInitials = (name: string) => {
     return name
@@ -81,20 +101,44 @@ const ClientEdit = () => {
     input.click();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!client) return;
 
-    const clients = loadJSON<ExtClient[]>("clients", []);
-    const updatedClients = clients.map(c => c.id === client.id ? client : c);
-    saveJSON("clients", updatedClients);
+    try {
+      await updateClient(client.id, {
+        fullName: client.fullName,
+        firstName: client.firstName,
+        middleName: client.middleName,
+        lastName: client.lastName,
+        age: client.age,
+        phones: client.phones,
+        address: client.address,
+        city: client.city,
+        village: client.village,
+        block: client.block,
+        profession: client.profession,
+        qualifications: client.qualifications,
+        email: client.email,
+        company: client.company,
+        profilePhoto: client.profilePhoto,
+        groupId: client.groupId,
+      });
 
-    toast({
-      title: "Client Updated",
-      description: "Client profile has been updated successfully.",
-    });
+      toast({
+        title: "Client Updated",
+        description: "Client profile has been updated successfully.",
+      });
 
-    navigate("/clients");
+      navigate("/clients");
+    } catch (error) {
+      console.error("Error updating client:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update client",
+        variant: "destructive",
+      });
+    }
   };
 
   const updateField = (field: keyof ExtClient, value: any) => {
