@@ -4,7 +4,7 @@ import {
   Home, Users, ShoppingBag, Calendar, Phone, Settings, 
   Plus, BarChart3, Archive, UserPlus
 } from "lucide-react";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -38,7 +38,7 @@ const quickActions = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { canDelete, canManageUsers } = useAuth();
+  const { canDelete, canManageUsers } = useSupabaseAuth();
   const location = useLocation();
   const currentPath = location.pathname;
 

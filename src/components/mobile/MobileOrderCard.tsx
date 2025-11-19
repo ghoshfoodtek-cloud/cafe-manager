@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Order } from '@/pages/Orders';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 interface MobileOrderCardProps {
   order: Order;
@@ -20,7 +20,7 @@ export const MobileOrderCard = ({
   getStatusClass,
   formatStatus,
 }: MobileOrderCardProps) => {
-  const { canDelete } = useAuth();
+  const { canDelete } = useSupabaseAuth();
 
   const swipeActions: SwipeAction[] = [
     {

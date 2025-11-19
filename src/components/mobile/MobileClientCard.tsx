@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { ExtClient } from '@/types/client';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 interface MobileClientCardProps {
   client: ExtClient;
@@ -29,7 +29,7 @@ export const MobileClientCard = ({
   isSelected,
   onSelect,
 }: MobileClientCardProps) => {
-  const { canDelete } = useAuth();
+  const { canDelete } = useSupabaseAuth();
 
   const displayName = (c: ExtClient) => {
     const name = [c.firstName, c.middleName, c.lastName].filter(Boolean).join(" ");

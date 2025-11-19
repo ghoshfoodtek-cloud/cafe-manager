@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { loadJSON, saveJSON } from "@/lib/storage";
 import { captureFromCamera, pickFromGallery } from "@/lib/capture";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 import type { Order, OrderEvent } from "./Orders";
 import type { Client } from "@/types/client";
 
@@ -15,7 +15,7 @@ const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { canDelete } = useAuth();
+  const { canDelete } = useSupabaseAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [eventTitle, setEventTitle] = useState("");

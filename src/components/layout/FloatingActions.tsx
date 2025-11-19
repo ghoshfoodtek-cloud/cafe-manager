@@ -3,11 +3,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, UserPlus, Users, ShoppingCart, Trash2, PhoneCall, Calendar, FileText, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 
 const FloatingActions = () => {
   const navigate = useNavigate();
-  const { canDelete, canManageUsers } = useAuth();
+  const { canDelete, canManageUsers } = useSupabaseAuth();
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
