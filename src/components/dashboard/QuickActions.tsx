@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { UserPlus, Plus, Calendar, BarChart3, Phone, Archive } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 
 const quickActionItems = [
   {
@@ -36,7 +36,7 @@ const quickActionItems = [
 ];
 
 export function QuickActions() {
-  const { canDelete, canManageUsers } = useAuth();
+  const { canDelete, canManageUsers } = useSupabaseAuth();
 
   const adminActions = [
     ...(canDelete ? [{
