@@ -1,34 +1,73 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { loadJSON, saveJSON } from "@/lib/storage";
-import type { Order } from "./Orders";
 import { useToast } from "@/components/ui/use-toast";
+import { getOrders, updateOrder, deleteOrder } from "@/lib/supabase-orders";
 
 const OrdersBin = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    setOrders(loadJSON<Order[]>("orders", []));
-  }, []);
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['orders'],
+    queryFn: getOrders,
+  });
 
   const trashed = useMemo(() => orders.filter(o => !!o.deletedAt), [orders]);
 
+  const restoreMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return updateOrder(id, { deletedAt: undefined });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({ title: "Order restored" });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to restore order",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const destroyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return deleteOrder(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({ title: "Order deleted permanently" });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to delete order",
+        variant: "destructive" 
+      });
+    },
+  });
+
   const restore = (id: string) => {
-    const updated = orders.map(o => o.id === id ? { ...o, deletedAt: undefined } : o);
-    setOrders(updated);
-    saveJSON("orders", updated);
-    toast({ title: "Order restored" });
+    restoreMutation.mutate(id);
   };
 
   const destroy = (id: string) => {
-    const updated = orders.filter(o => o.id !== id);
-    setOrders(updated);
-    saveJSON("orders", updated);
-    toast({ title: "Order deleted permanently" });
+    destroyMutation.mutate(id);
   };
+
+  if (isLoading) {
+    return (
+      <main className="container mx-auto py-6">
+        <div className="rounded-lg border p-6">
+          <p className="text-muted-foreground">Loading bin...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="container mx-auto py-6">
@@ -50,10 +89,25 @@ const OrdersBin = () => {
           {trashed.map((o) => (
             <li key={o.id} className="rounded-lg border p-4">
               <div className="mb-1 text-lg font-medium">{o.title}</div>
-              <div className="text-sm text-muted-foreground">Deleted: {o.deletedAt ? new Date(o.deletedAt).toLocaleString() : ''}</div>
+              <div className="text-sm text-muted-foreground">
+                Deleted: {o.deletedAt ? new Date(o.deletedAt).toLocaleString() : ''}
+              </div>
               <div className="mt-3 flex items-center gap-2">
-                <Button size="sm" onClick={() => restore(o.id)}>Restore</Button>
-                <Button size="sm" variant="destructive" onClick={() => destroy(o.id)}>Delete Permanently</Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => restore(o.id)}
+                  disabled={restoreMutation.isPending || destroyMutation.isPending}
+                >
+                  {restoreMutation.isPending ? "Restoring..." : "Restore"}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  onClick={() => destroy(o.id)}
+                  disabled={restoreMutation.isPending || destroyMutation.isPending}
+                >
+                  {destroyMutation.isPending ? "Deleting..." : "Delete Permanently"}
+                </Button>
               </div>
             </li>
           ))}
