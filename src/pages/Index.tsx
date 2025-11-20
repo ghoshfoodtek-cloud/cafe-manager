@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { loadJSON } from "@/lib/storage";
-import type { Client } from "@/types/client";
-import type { Order } from "./Orders";
+import { useQuery } from "@tanstack/react-query";
+import { getClients } from "@/lib/supabase-clients";
+import { getOrders } from "@/lib/supabase-orders";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
@@ -16,13 +16,15 @@ const daysAgo = (d: number) => {
 };
 
 const Index = () => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: getClients
+  });
 
-  useEffect(() => {
-    setClients(loadJSON<Client[]>("clients", []));
-    setOrders(loadJSON<Order[]>("orders", []));
-  }, []);
+  const { data: orders = [] } = useQuery({
+    queryKey: ["orders"],
+    queryFn: () => getOrders()
+  });
 
   const stats = useMemo(() => {
     const totalClients = clients.length;
@@ -33,8 +35,6 @@ const Index = () => {
     const pending = orders.filter(o => o.status === "pending").length;
     const inProgress = orders.filter(o => o.status === "in_progress").length;
     const completed = orders.filter(o => o.status === "completed").length;
-
-    const events7 = orders.reduce((sum, o) => sum + o.events.filter(e => new Date(e.timestamp).getTime() >= since7).length, 0);
 
     // Build last 14 days orders per day
     const map: Record<string, number> = {};
@@ -49,7 +49,7 @@ const Index = () => {
     });
     const series = Object.keys(map).sort().map(k => ({ date: k.slice(5), orders: map[k] }));
 
-    return { totalClients, newClients7, totalOrders, pending, inProgress, completed, events7, series };
+    return { totalClients, newClients7, totalOrders, pending, inProgress, completed, series };
   }, [clients, orders]);
 
   return (
@@ -83,7 +83,7 @@ const Index = () => {
                 <CardHeader className="pb-2"><CardTitle>Total Orders</CardTitle></CardHeader>
                 <CardContent>
                   <div className="text-3xl font-semibold">{stats.totalOrders}</div>
-                  <div className="text-sm text-muted-foreground">Events (7d): {stats.events7}</div>
+                  <div className="text-sm text-muted-foreground">Active orders</div>
                 </CardContent>
               </Card>
 

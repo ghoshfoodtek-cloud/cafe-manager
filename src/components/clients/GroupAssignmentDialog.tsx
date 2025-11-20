@@ -17,20 +17,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, FolderPlus } from "lucide-react";
-import { loadJSON, saveJSON } from "@/lib/storage";
+import { Users, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { ExtClient, ContactGroup } from "@/types/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getContactGroups, createContactGroup } from "@/lib/supabase-groups";
+import { updateClient } from "@/lib/supabase-clients";
+import type { ExtClient } from "@/types/client";
 
 interface GroupAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clients: ExtClient[];
   selectedClientIds: string[];
-  onClientsUpdated: (clients: ExtClient[]) => void;
+  onClientsUpdated: () => void;
 }
-
-const GROUPS_KEY = "contactGroups";
 
 export function GroupAssignmentDialog({
   open,
@@ -39,20 +39,22 @@ export function GroupAssignmentDialog({
   selectedClientIds,
   onClientsUpdated,
 }: GroupAssignmentDialogProps) {
-  const [groups, setGroups] = useState<ContactGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: groups = [] } = useQuery({
+    queryKey: ["contactGroups"],
+    queryFn: getContactGroups
+  });
 
   const selectedClients = clients.filter(client => selectedClientIds.includes(client.id));
   const isBulkOperation = selectedClients.length > 1;
 
   useEffect(() => {
     if (open) {
-      const loadedGroups = loadJSON<ContactGroup[]>(GROUPS_KEY, []);
-      setGroups(loadedGroups);
-      
       // If single client selection, set current group
       if (selectedClients.length === 1) {
         setSelectedGroupId(selectedClients[0].groupId || "none");
@@ -68,50 +70,68 @@ export function GroupAssignmentDialog({
     return group?.name || "Unknown Group";
   };
 
+  const createGroupMutation = useMutation({
+    mutationFn: createContactGroup,
+    onSuccess: (newGroup) => {
+      queryClient.invalidateQueries({ queryKey: ["contactGroups"] });
+      setSelectedGroupId(newGroup.id);
+      setIsCreatingGroup(false);
+      setNewGroupName("");
+      toast({
+        title: "Group Created",
+        description: `Group "${newGroup.name}" has been created successfully.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create group. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateClientMutation = useMutation({
+    mutationFn: ({ clientId, groupId }: { clientId: string; groupId: string | null }) =>
+      updateClient(clientId, { groupId: groupId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    }
+  });
+
   const handleCreateGroup = () => {
     const name = newGroupName.trim();
     if (!name) return;
-
-    const newGroup: ContactGroup = {
-      id: `grp_${Date.now()}`,
-      name
-    };
-
-    const updatedGroups = [...groups, newGroup];
-    setGroups(updatedGroups);
-    saveJSON(GROUPS_KEY, updatedGroups);
-    setSelectedGroupId(newGroup.id);
-    setIsCreatingGroup(false);
-    setNewGroupName("");
-
-    toast({
-      title: "Group Created",
-      description: `Group "${name}" has been created successfully.`,
-    });
+    createGroupMutation.mutate(name);
   };
 
-  const handleAssignGroup = () => {
-    const groupIdToAssign = selectedGroupId === "none" ? undefined : selectedGroupId;
+  const handleAssignGroup = async () => {
+    const groupIdToAssign = selectedGroupId === "none" ? null : selectedGroupId;
     
-    const updatedClients = clients.map(client => {
-      if (selectedClientIds.includes(client.id)) {
-        return { ...client, groupId: groupIdToAssign };
-      }
-      return client;
-    });
+    try {
+      await Promise.all(
+        selectedClientIds.map(clientId =>
+          updateClientMutation.mutateAsync({ clientId, groupId: groupIdToAssign })
+        )
+      );
 
-    saveJSON("clients", updatedClients);
-    onClientsUpdated(updatedClients);
+      const groupName = selectedGroupId === "none" ? "Unassigned" : 
+        groups.find(g => g.id === selectedGroupId)?.name || "Unknown";
 
-    const groupName = selectedGroupId === "none" ? "Unassigned" : 
-      groups.find(g => g.id === selectedGroupId)?.name || "Unknown";
+      toast({
+        title: isBulkOperation ? "Clients Updated" : "Client Updated",
+        description: `${selectedClients.length} client${selectedClients.length > 1 ? 's' : ''} ${selectedGroupId === "none" ? 'removed from groups' : `assigned to "${groupName}"`}.`,
+      });
 
-    toast({
-      title: isBulkOperation ? "Clients Updated" : "Client Updated",
-      description: `${selectedClients.length} client${selectedClients.length > 1 ? 's' : ''} ${selectedGroupId === "none" ? 'removed from groups' : `assigned to "${groupName}"`}.`,
-    });
-
-    onOpenChange(false);
+      onClientsUpdated();
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update clients. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCancel = () => {
@@ -126,7 +146,7 @@ export function GroupAssignmentDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isBulkOperation ? <Users className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
+            <Users className="h-5 w-5" />
             {isBulkOperation ? "Assign Clients to Group" : "Assign Client to Group"}
           </DialogTitle>
         </DialogHeader>

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
-import { loadJSON } from "@/lib/storage";
-import { GlobalEvent } from "@/types/user";
+import { useQuery } from "@tanstack/react-query";
+import { getGlobalEvents } from "@/lib/supabase-events";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,18 @@ import { format, parseISO } from "date-fns";
 
 const EventLogs = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const events = loadJSON<GlobalEvent[]>("globalEvents", []);
+  
+  const { data: events = [] } = useQuery({
+    queryKey: ["globalEvents"],
+    queryFn: getGlobalEvents
+  });
 
   const filteredEvents = useMemo(() => {
     if (!searchTerm) return events;
     
     return events.filter((event) =>
       event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.createdBy.toLowerCase().includes(searchTerm.toLowerCase())
+      event.created_by_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [events, searchTerm]);
 
@@ -92,32 +96,30 @@ const EventLogs = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredEvents
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-            .map((event) => (
-              <Card key={event.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <p className="text-lg font-medium">{event.description}</p>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {formatEventDate(event.timestamp)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {event.createdBy}
-                        </div>
+          filteredEvents.map((event) => (
+            <Card key={event.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <p className="text-lg font-medium">{event.description}</p>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {formatEventDate(event.created_at)}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        {event.created_by_name}
                       </div>
                     </div>
-                    <Badge variant="outline" className="shrink-0">
-                      {event.id.slice(-8)}
-                    </Badge>
                   </div>
-                </CardContent>
-              </Card>
-            ))
+                  <Badge variant="outline" className="shrink-0">
+                    {event.id.slice(-8)}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))
         )}
       </div>
     </div>
