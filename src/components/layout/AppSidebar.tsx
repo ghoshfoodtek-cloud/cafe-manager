@@ -5,6 +5,9 @@ import {
   Plus, BarChart3, Archive, UserPlus
 } from "lucide-react";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { getClients } from "@/lib/supabase-clients";
+import { getOrders } from "@/lib/supabase-orders";
 import {
   Sidebar,
   SidebarContent,
@@ -18,8 +21,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { loadJSON } from "@/lib/storage";
 
 const mainNavItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -42,10 +43,18 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Get stats for mini dashboard
-  const clients = loadJSON("clients", []);
-  const orders = loadJSON("orders", []);
-  const pendingOrders = orders.filter((o: any) => o.status === "pending").length;
+  // Get stats from Supabase
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: getClients
+  });
+
+  const { data: orders = [] } = useQuery({
+    queryKey: ["orders"],
+    queryFn: () => getOrders()
+  });
+
+  const pendingOrders = orders.filter(o => o.status === "pending").length;
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
