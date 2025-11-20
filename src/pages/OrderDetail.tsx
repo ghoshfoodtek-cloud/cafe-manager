@@ -1,92 +1,166 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { loadJSON, saveJSON } from "@/lib/storage";
 import { captureFromCamera, pickFromGallery } from "@/lib/capture";
 import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
-import type { Order, OrderEvent } from "./Orders";
-import type { Client } from "@/types/client";
+import { getOrder, updateOrder, deleteOrder, addOrderEvent } from "@/lib/supabase-orders";
+import { getClients } from "@/lib/supabase-clients";
+import type { ExtClient } from "@/types/client";
 
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { canDelete } = useSupabaseAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { canDelete, user } = useSupabaseAuth();
+  const queryClient = useQueryClient();
+  
   const [eventTitle, setEventTitle] = useState("");
   const [eventNote, setEventNote] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
   const [clientQuery, setClientQuery] = useState("");
 
-  useEffect(() => {
-    setOrders(loadJSON<Order[]>("orders", []));
-    setClients(loadJSON<Client[]>("clients", []));
-  }, []);
+  const { data: order, isLoading: orderLoading } = useQuery({
+    queryKey: ['order', id],
+    queryFn: () => getOrder(id!),
+    enabled: !!id,
+  });
 
-  const order = useMemo(() => orders.find(o => o.id === id), [orders, id]);
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
+    queryKey: ['clients'],
+    queryFn: getClients,
+  });
+
   const isInBin = useMemo(() => !!order?.deletedAt, [order]);
 
-  // Removed auto-creation logic that was causing phantom orders
+  const addEventMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      if (!id) throw new Error("Order ID required");
+      return addOrderEvent(id, {
+        title: eventTitle.trim(),
+        note: eventNote.trim() || undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      }, user.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      setEventTitle("");
+      setEventNote("");
+      setAttachments([]);
+      toast({ title: "Event added" });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error adding event", 
+        description: error instanceof Error ? error.message : "Failed to add event",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const linkClientMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      if (!id) throw new Error("Order ID required");
+      return updateOrder(id, { clientId: clientId || undefined });
+    },
+    onSuccess: (_, clientId) => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      const clientName = clients.find(c => c.id === clientId)?.fullName;
+      toast({ 
+        title: clientId ? "Client linked" : "Client unlinked", 
+        description: clientName 
+      });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to update client",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const moveToBinMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("Order ID required");
+      return updateOrder(id, { deletedAt: new Date().toISOString() });
+    },
+    onSuccess: () => {
+      toast({ title: "Moved to bin" });
+      navigate("/orders");
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to move to bin",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const restoreFromBinMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("Order ID required");
+      return updateOrder(id, { deletedAt: undefined });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      toast({ title: "Order restored" });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to restore order",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const deletePermanentlyMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("Order ID required");
+      return deleteOrder(id);
+    },
+    onSuccess: () => {
+      toast({ title: "Order deleted permanently" });
+      navigate("/orders");
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to delete order",
+        variant: "destructive" 
+      });
+    },
+  });
 
   const addEvent = () => {
-    if (!order) return;
     if (!eventTitle.trim()) {
       toast({ title: "Event title required", variant: "destructive" });
       return;
     }
-    const evt: OrderEvent = {
-      id: String(Date.now()),
-      title: eventTitle.trim(),
-      note: eventNote.trim() || undefined,
-      timestamp: new Date().toISOString(),
-      attachments,
-    };
-    const updated = orders.map(o => o.id === order.id ? { ...o, events: [evt, ...o.events] } : o);
-    setOrders(updated);
-    saveJSON("orders", updated);
-    setEventTitle("");
-    setEventNote("");
-    setAttachments([]);
-    toast({ title: "Event added", description: evt.title });
+    addEventMutation.mutate();
   };
 
   const linkClient = (clientId: string) => {
-    if (!order) return;
-    const updated = orders.map(o => o.id === order.id ? { ...o, clientId } : o);
-    setOrders(updated);
-    saveJSON("orders", updated);
-    toast({ title: "Client linked", description: clients.find(c => c.id === clientId)?.fullName });
+    linkClientMutation.mutate(clientId);
   };
 
   const moveToBin = () => {
-    if (!order) return;
-    const updated = orders.map(o => o.id === order.id ? { ...o, deletedAt: new Date().toISOString() } : o);
-    setOrders(updated);
-    saveJSON("orders", updated);
-    toast({ title: "Moved to bin" });
-    navigate("/orders");
+    moveToBinMutation.mutate();
   };
 
   const restoreFromBin = () => {
-    if (!order) return;
-    const updated = orders.map(o => o.id === order.id ? { ...o, deletedAt: undefined } : o);
-    setOrders(updated);
-    saveJSON("orders", updated);
-    toast({ title: "Order restored" });
+    restoreFromBinMutation.mutate();
   };
 
   const deletePermanently = () => {
-    if (!order) return;
-    const updated = orders.filter(o => o.id !== order.id);
-    setOrders(updated);
-    saveJSON("orders", updated);
-    toast({ title: "Order deleted permanently" });
-    navigate("/orders");
+    deletePermanentlyMutation.mutate();
   };
 
   const doCapture = async (mode: 'camera' | 'gallery') => {
@@ -112,6 +186,16 @@ const OrderDetail = () => {
     if (!q) return clients.slice(0, 5);
     return clients.filter(c => c.fullName.toLowerCase().includes(q) || c.phones.some(p => p.includes(q))).slice(0, 8);
   }, [clientQuery, clients]);
+
+  if (orderLoading || clientsLoading) {
+    return (
+      <main className="container mx-auto py-6">
+        <div className="rounded-lg border p-6">
+          <p className="text-muted-foreground">Loading order...</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!order) {
     return (
@@ -143,12 +227,32 @@ const OrderDetail = () => {
         <div className="flex items-center gap-2">
           <div className="text-sm text-muted-foreground">Status: {order.status.replace("_", " ")}</div>
           {!isInBin ? (
-            <Button size="sm" variant="outline" onClick={moveToBin}>Move to Bin</Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={moveToBin}
+              disabled={moveToBinMutation.isPending}
+            >
+              {moveToBinMutation.isPending ? "Moving..." : "Move to Bin"}
+            </Button>
           ) : (
             <>
-              <Button size="sm" onClick={restoreFromBin}>Restore</Button>
+              <Button 
+                size="sm" 
+                onClick={restoreFromBin}
+                disabled={restoreFromBinMutation.isPending}
+              >
+                {restoreFromBinMutation.isPending ? "Restoring..." : "Restore"}
+              </Button>
               {canDelete && (
-                <Button size="sm" variant="destructive" onClick={deletePermanently}>Delete Permanently</Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  onClick={deletePermanently}
+                  disabled={deletePermanentlyMutation.isPending}
+                >
+                  {deletePermanentlyMutation.isPending ? "Deleting..." : "Delete Permanently"}
+                </Button>
               )}
             </>
           )}
@@ -159,14 +263,31 @@ const OrderDetail = () => {
         <h2 className="mb-3 text-lg font-medium">Link to Client</h2>
         {order.clientId ? (
           <div className="text-sm">Linked: {clients.find(c => c.id === order.clientId)?.fullName}
-            <Button className="ml-3" size="sm" variant="outline" onClick={() => linkClient("")}>Unlink</Button>
+            <Button 
+              className="ml-3" 
+              size="sm" 
+              variant="outline" 
+              onClick={() => linkClient("")}
+              disabled={linkClientMutation.isPending}
+            >
+              {linkClientMutation.isPending ? "Unlinking..." : "Unlink"}
+            </Button>
           </div>
         ) : (
           <div className="grid gap-3">
-            <Input placeholder="Search by name or phone" value={clientQuery} onChange={(e) => setClientQuery(e.target.value)} />
+            <Input 
+              placeholder="Search by name or phone" 
+              value={clientQuery} 
+              onChange={(e) => setClientQuery(e.target.value)} 
+            />
             <div className="grid gap-2">
               {filteredClients.map(c => (
-                <button key={c.id} onClick={() => linkClient(c.id)} className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left hover:bg-accent">
+                <button 
+                  key={c.id} 
+                  onClick={() => linkClient(c.id)} 
+                  className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left hover:bg-accent"
+                  disabled={linkClientMutation.isPending}
+                >
                   <span>{c.fullName}</span>
                   <span className="text-sm text-muted-foreground">{c.phones[0]}</span>
                 </button>
@@ -182,16 +303,45 @@ const OrderDetail = () => {
       <section className="mb-6 rounded-lg border p-4">
         <h2 className="mb-3 text-lg font-medium">Add Event</h2>
         <div className="grid gap-3">
-          <Input placeholder="Event title (e.g., Documents submitted)" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} />
-          <Textarea placeholder="Optional note" value={eventNote} onChange={(e) => setEventNote(e.target.value)} />
+          <Input 
+            placeholder="Event title (e.g., Documents submitted)" 
+            value={eventTitle} 
+            onChange={(e) => setEventTitle(e.target.value)} 
+            disabled={addEventMutation.isPending}
+          />
+          <Textarea 
+            placeholder="Optional note" 
+            value={eventNote} 
+            onChange={(e) => setEventNote(e.target.value)} 
+            disabled={addEventMutation.isPending}
+          />
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="secondary" onClick={() => doCapture('camera')}>Use Camera</Button>
-            <Button type="button" variant="secondary" onClick={() => doCapture('gallery')}>Pick from Gallery</Button>
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => doCapture('camera')}
+              disabled={addEventMutation.isPending}
+            >
+              Use Camera
+            </Button>
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => doCapture('gallery')}
+              disabled={addEventMutation.isPending}
+            >
+              Pick from Gallery
+            </Button>
             <label className="ml-auto text-sm text-muted-foreground">
               or upload
-              <input type="file" accept="image/*,application/pdf" onChange={onFilePicked} className="ml-2" />
+              <input 
+                type="file" 
+                accept="image/*,application/pdf" 
+                onChange={onFilePicked} 
+                className="ml-2" 
+                disabled={addEventMutation.isPending}
+              />
             </label>
-            <Button onClick={addEvent}>Add Event</Button>
           </div>
           {attachments.length > 0 && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -200,6 +350,12 @@ const OrderDetail = () => {
               ))}
             </div>
           )}
+          <Button 
+            onClick={addEvent}
+            disabled={addEventMutation.isPending}
+          >
+            {addEventMutation.isPending ? "Adding..." : "Add Event"}
+          </Button>
         </div>
       </section>
 
