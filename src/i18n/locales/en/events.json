@@ -1,0 +1,18 @@
+{
+  "events": "Events",
+  "eventLogs": "Event Logs",
+  "addEvent": "Add Event",
+  "globalEvents": "Global Events",
+  "orderEvents": "Order Events",
+  "eventDescription": "Event Description",
+  "createdBy": "Created By",
+  "noEvents": "No events found",
+  "eventCreated": "Event created successfully",
+  "callLogs": "Call Logs",
+  "noCallLogs": "No call logs found",
+  "duration": "Duration",
+  "startedAt": "Started At",
+  "endedAt": "Ended At",
+  "recording": "Recording",
+  "playRecording": "Play Recording"
+}

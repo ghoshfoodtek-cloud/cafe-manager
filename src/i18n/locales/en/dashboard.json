@@ -1,0 +1,15 @@
+{
+  "dashboardHub": "Dashboard Hub",
+  "centralCommand": "Your central command center for managing clients, orders, and business insights.",
+  "totalClients": "Total Clients",
+  "totalOrders": "Total Orders",
+  "inProgress": "In Progress",
+  "completed": "Completed",
+  "pending": "Pending",
+  "pendingOrders": "Pending Orders",
+  "last7Days": "+{{count}} in last 7 days",
+  "activeOrders": "Active orders",
+  "totalCompletedOrders": "Total completed orders",
+  "ordersCreated14Days": "Orders Created (Last 14 days)",
+  "recentActivity": "Recent Activity"
+}
