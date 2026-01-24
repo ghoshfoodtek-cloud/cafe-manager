@@ -1,0 +1,15 @@
+{
+  "dashboardHub": "डैशबोर्ड हब",
+  "centralCommand": "ग्राहकों, ऑर्डर और व्यापार अंतर्दृष्टि के प्रबंधन के लिए आपका केंद्रीय कमांड सेंटर।",
+  "totalClients": "कुल ग्राहक",
+  "totalOrders": "कुल ऑर्डर",
+  "inProgress": "प्रगति में",
+  "completed": "पूर्ण",
+  "pending": "लंबित",
+  "pendingOrders": "लंबित ऑर्डर",
+  "last7Days": "पिछले 7 दिनों में +{{count}}",
+  "activeOrders": "सक्रिय ऑर्डर",
+  "totalCompletedOrders": "कुल पूर्ण ऑर्डर",
+  "ordersCreated14Days": "ऑर्डर बनाए गए (पिछले 14 दिन)",
+  "recentActivity": "हाल की गतिविधि"
+}

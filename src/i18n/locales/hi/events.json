@@ -1,0 +1,18 @@
+{
+  "events": "इवेंट्स",
+  "eventLogs": "इवेंट लॉग",
+  "addEvent": "इवेंट जोड़ें",
+  "globalEvents": "वैश्विक इवेंट्स",
+  "orderEvents": "ऑर्डर इवेंट्स",
+  "eventDescription": "इवेंट विवरण",
+  "createdBy": "द्वारा बनाया गया",
+  "noEvents": "कोई इवेंट नहीं मिला",
+  "eventCreated": "इवेंट सफलतापूर्वक बनाया गया",
+  "callLogs": "कॉल लॉग",
+  "noCallLogs": "कोई कॉल लॉग नहीं मिला",
+  "duration": "अवधि",
+  "startedAt": "शुरू हुआ",
+  "endedAt": "समाप्त हुआ",
+  "recording": "रिकॉर्डिंग",
+  "playRecording": "रिकॉर्डिंग चलाएं"
+}
