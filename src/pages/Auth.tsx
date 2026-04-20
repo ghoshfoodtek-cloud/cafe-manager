@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { signIn, signUp } from '@/lib/supabase-auth';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
@@ -26,6 +28,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated, loading } = useSupabaseAuth();
+  const { t } = useTranslation('auth');
 
   const [signUpForm, setSignUpForm] = useState({ email: '', password: '', name: '' });
   const [signInForm, setSignInForm] = useState({ email: '', password: '' });
@@ -40,11 +43,11 @@ const Auth = () => {
   const handleSignUp = async () => {
     try {
       setIsSubmitting(true);
-      
+
       const validation = signUpSchema.safeParse(signUpForm);
       if (!validation.success) {
         toast({
-          title: 'Validation Error',
+          title: t('validationError'),
           description: validation.error.errors[0].message,
           variant: 'destructive',
         });
@@ -52,17 +55,17 @@ const Auth = () => {
       }
 
       const { error } = await signUp(signUpForm.email, signUpForm.password, signUpForm.name);
-      
+
       if (error) {
         if (error.message.includes('already registered')) {
           toast({
-            title: 'Account Exists',
-            description: 'This email is already registered. Please sign in instead.',
+            title: t('accountExists'),
+            description: t('accountExistsDesc'),
             variant: 'destructive',
           });
         } else {
           toast({
-            title: 'Sign Up Failed',
+            title: t('signUpFailed'),
             description: error.message,
             variant: 'destructive',
           });
@@ -71,10 +74,10 @@ const Auth = () => {
       }
 
       toast({
-        title: 'Success!',
-        description: 'Account created. Please check your email to confirm.',
+        title: t('success'),
+        description: t('accountCreated'),
       });
-      
+
       setSignUpForm({ email: '', password: '', name: '' });
     } catch (error: any) {
       toast({
@@ -90,11 +93,11 @@ const Auth = () => {
   const handleSignIn = async () => {
     try {
       setIsSubmitting(true);
-      
+
       const validation = signInSchema.safeParse(signInForm);
       if (!validation.success) {
         toast({
-          title: 'Validation Error',
+          title: t('validationError'),
           description: validation.error.errors[0].message,
           variant: 'destructive',
         });
@@ -102,12 +105,12 @@ const Auth = () => {
       }
 
       const { error } = await signIn(signInForm.email, signInForm.password);
-      
+
       if (error) {
         toast({
-          title: 'Sign In Failed',
-          description: error.message === 'Invalid login credentials' 
-            ? 'Invalid email or password' 
+          title: t('signInFailed'),
+          description: error.message === 'Invalid login credentials'
+            ? t('invalidCredentials')
             : error.message,
           variant: 'destructive',
         });
@@ -115,10 +118,10 @@ const Auth = () => {
       }
 
       toast({
-        title: 'Welcome back!',
-        description: 'You have successfully signed in.',
+        title: t('welcomeBack'),
+        description: t('signedIn'),
       });
-      
+
       navigate('/');
     } catch (error: any) {
       toast({
@@ -145,93 +148,97 @@ const Auth = () => {
         <title>Sign In / Sign Up - CRM</title>
         <meta name="description" content="Sign in to your account or create a new one" />
       </Helmet>
-      
-      <div className="flex items-center justify-center min-h-screen bg-background p-4">
+
+      <div className="flex items-center justify-center min-h-screen bg-background p-4 relative">
+        <div className="absolute top-4 right-4">
+          <LanguageSwitcher variant="outline" />
+        </div>
+
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
+            <CardTitle>{t('welcome')}</CardTitle>
+            <CardDescription>{t('signInDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">{t('signIn')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('signUp')}</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="signin" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email">{t('email')}</Label>
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder={t('emailPlaceholder')}
                     value={signInForm.email}
                     onChange={(e) => setSignInForm({ ...signInForm, email: e.target.value })}
                     onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password">{t('password')}</Label>
                   <Input
                     id="signin-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder={t('passwordPlaceholder')}
                     value={signInForm.password}
                     onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
                     onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
                   />
                 </div>
-                <Button 
-                  onClick={handleSignIn} 
+                <Button
+                  onClick={handleSignIn}
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Signing in...' : 'Sign In'}
+                  {isSubmitting ? t('signingIn') : t('signIn')}
                 </Button>
               </TabsContent>
-              
+
               <TabsContent value="signup" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Name</Label>
+                  <Label htmlFor="signup-name">{t('name')}</Label>
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="Your Name"
+                    placeholder={t('namePlaceholder')}
                     value={signUpForm.name}
                     onChange={(e) => setSignUpForm({ ...signUpForm, name: e.target.value })}
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">{t('email')}</Label>
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder={t('emailPlaceholder')}
                     value={signUpForm.email}
                     onChange={(e) => setSignUpForm({ ...signUpForm, email: e.target.value })}
                     maxLength={255}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">{t('password')}</Label>
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder={t('passwordPlaceholder')}
                     value={signUpForm.password}
                     onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
                     onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
                   />
-                  <p className="text-xs text-muted-foreground">At least 6 characters</p>
+                  <p className="text-xs text-muted-foreground">{t('passwordHint')}</p>
                 </div>
-                <Button 
-                  onClick={handleSignUp} 
+                <Button
+                  onClick={handleSignUp}
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Creating account...' : 'Create Account'}
+                  {isSubmitting ? t('creatingAccount') : t('createAccount')}
                 </Button>
               </TabsContent>
             </Tabs>
