@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BottomNavigation } from "@/components/mobile/BottomNavigation";
 import { signOut } from "@/lib/supabase-auth";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -37,8 +38,11 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <h1 className="text-xl font-semibold">Bharat Connect Pro</h1>
               </div>
               
-              {/* User Menu */}
-              <DropdownMenu>
+              <div className="flex items-center gap-2">
+                <LanguageSwitcher />
+
+                {/* User Menu */}
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2">
                     <User className="h-4 w-4" />
@@ -63,8 +67,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </header>
           
