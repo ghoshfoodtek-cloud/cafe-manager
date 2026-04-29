@@ -33,7 +33,7 @@ const Auth = () => {
   const { isAuthenticated, loading } = useSupabaseAuth();
   const { t } = useTranslation('auth');
 
-  const [signUpForm, setSignUpForm] = useState({ email: '', password: '', name: '' });
+  const [signUpForm, setSignUpForm] = useState<{ email: string; password: string; name: string; requestedRole: 'admin' | 'associate' }>({ email: '', password: '', name: '', requestedRole: 'associate' });
   const [signInForm, setSignInForm] = useState({ email: '', password: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
