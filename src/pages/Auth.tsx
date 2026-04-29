@@ -57,7 +57,7 @@ const Auth = () => {
         return;
       }
 
-      const { error } = await signUp(signUpForm.email, signUpForm.password, signUpForm.name);
+      const { data, error } = await signUp(signUpForm.email, signUpForm.password, signUpForm.name);
 
       if (error) {
         if (error.message.includes('already registered')) {
@@ -76,12 +76,26 @@ const Auth = () => {
         return;
       }
 
+      // Record the role request (requires an active session — only works
+      // when email confirmation is disabled or after the user confirms).
+      if (data?.user) {
+        const { error: reqError } = await supabase.from('role_requests').insert({
+          user_id: data.user.id,
+          email: signUpForm.email,
+          requested_role: signUpForm.requestedRole,
+          status: 'pending',
+        });
+        if (reqError) {
+          console.error('Failed to record role request:', reqError);
+        }
+      }
+
       toast({
         title: t('success'),
-        description: t('accountCreated'),
+        description: t('roleRequestPending'),
       });
 
-      setSignUpForm({ email: '', password: '', name: '' });
+      setSignUpForm({ email: '', password: '', name: '', requestedRole: 'associate' });
     } catch (error: any) {
       toast({
         title: 'Error',
