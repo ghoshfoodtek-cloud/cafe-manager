@@ -7,16 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { signIn, signUp } from '@/lib/supabase-auth';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
+  requestedRole: z.enum(['admin', 'associate']),
 });
 
 const signInSchema = z.object({
@@ -30,7 +33,7 @@ const Auth = () => {
   const { isAuthenticated, loading } = useSupabaseAuth();
   const { t } = useTranslation('auth');
 
-  const [signUpForm, setSignUpForm] = useState({ email: '', password: '', name: '' });
+  const [signUpForm, setSignUpForm] = useState<{ email: string; password: string; name: string; requestedRole: 'admin' | 'associate' }>({ email: '', password: '', name: '', requestedRole: 'associate' });
   const [signInForm, setSignInForm] = useState({ email: '', password: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,7 +57,7 @@ const Auth = () => {
         return;
       }
 
-      const { error } = await signUp(signUpForm.email, signUpForm.password, signUpForm.name);
+      const { data, error } = await signUp(signUpForm.email, signUpForm.password, signUpForm.name);
 
       if (error) {
         if (error.message.includes('already registered')) {
@@ -73,12 +76,26 @@ const Auth = () => {
         return;
       }
 
+      // Record the role request (requires an active session — only works
+      // when email confirmation is disabled or after the user confirms).
+      if (data?.user) {
+        const { error: reqError } = await supabase.from('role_requests').insert({
+          user_id: data.user.id,
+          email: signUpForm.email,
+          requested_role: signUpForm.requestedRole,
+          status: 'pending',
+        });
+        if (reqError) {
+          console.error('Failed to record role request:', reqError);
+        }
+      }
+
       toast({
         title: t('success'),
-        description: t('accountCreated'),
+        description: t('roleRequestPending'),
       });
 
-      setSignUpForm({ email: '', password: '', name: '' });
+      setSignUpForm({ email: '', password: '', name: '', requestedRole: 'associate' });
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -232,6 +249,30 @@ const Auth = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
                   />
                   <p className="text-xs text-muted-foreground">{t('passwordHint')}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('role')}</Label>
+                  <RadioGroup
+                    value={signUpForm.requestedRole}
+                    onValueChange={(value) =>
+                      setSignUpForm({ ...signUpForm, requestedRole: value as 'admin' | 'associate' })
+                    }
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="associate" id="role-associate" />
+                      <Label htmlFor="role-associate" className="font-normal cursor-pointer">
+                        {t('roleAssociate')}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="admin" id="role-admin" />
+                      <Label htmlFor="role-admin" className="font-normal cursor-pointer">
+                        {t('roleAdmin')}
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-xs text-muted-foreground">{t('roleHint')}</p>
                 </div>
                 <Button
                   onClick={handleSignUp}
