@@ -250,6 +250,30 @@ const Auth = () => {
                   />
                   <p className="text-xs text-muted-foreground">{t('passwordHint')}</p>
                 </div>
+                <div className="space-y-2">
+                  <Label>{t('role')}</Label>
+                  <RadioGroup
+                    value={signUpForm.requestedRole}
+                    onValueChange={(value) =>
+                      setSignUpForm({ ...signUpForm, requestedRole: value as 'admin' | 'associate' })
+                    }
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="associate" id="role-associate" />
+                      <Label htmlFor="role-associate" className="font-normal cursor-pointer">
+                        {t('roleAssociate')}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="admin" id="role-admin" />
+                      <Label htmlFor="role-admin" className="font-normal cursor-pointer">
+                        {t('roleAdmin')}
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-xs text-muted-foreground">{t('roleHint')}</p>
+                </div>
                 <Button
                   onClick={handleSignUp}
                   className="w-full"
